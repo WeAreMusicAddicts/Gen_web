@@ -526,7 +526,7 @@ config ports {port} state enable`, description: "Перезапуск порта
   },
 
   huawei_switch: {
-    label: "Huawei (Ethernet)",
+    label: "Huawei (?????)",
     modes: {
       access: ({ portType, port, accessVlan, desc }) => [
         `system-view`,
@@ -583,12 +583,37 @@ config ports {port} state enable`, description: "Перезапуск порта
       ],
     },
     diagnostics: {
-      "Работа с портом": [
-        { command: `display interface brief`, description: "Краткий статус интерфейсов" },
-        { command: `display interface GigabitEthernet0/0/{port}`, description: "Информация по порту" },
+      "Версия устройства": [
+        { command: `display version`, description: "Версия ПО" },
       ],
-      "Работа с VLAN": [
-        { command: `display vlan`, description: "Список VLAN" },
+      "Статус портов": [
+        { command: `display interface brief`, description: "Краткий статус интерфейсов" },
+        { command: `display interface description`, description: "Описание интерфейсов" },
+        { command: `display interface GigabitEthernet{port}`, description: "Информация по порту" },
+      ],
+      "Конфигурация портов": [
+        { command: `display current-configuration`, description: "Текущая конфигурация" },
+        { command: `display current-configuration interface GigabitEthernet{port}`, description: "Конфигурация порта" },
+        { command: `display protocol-vlan interface GigabitEthernet{port}`, description: "Protocol VLAN на порту" },
+      ],
+      "Просмотр MAC-адресов": [
+        { command: `display mac-address dynamic`, description: "Все MAC-адреса" },
+        { command: `display mac-address dynamic GigabitEthernet{port}`, description: "MAC на порту" },
+        { command: `display mac-address dynamic vlan {vlan}`, description: "MAC во VLAN" },
+      ],
+      "IGMP Snooping": [
+        { command: `display igmp-snooping port-info | include Eth{port}`, description: "IGMP Snooping по порту" },
+      ],
+      "Просмотр логов": [
+        { command: `display logbuffer`, description: "Логи" },
+      ],
+      "Сохранение": [
+        { command: `save`, description: "Сохранение конфигурации" },
+      ],
+      "Cable Diagnostic": [
+        { command: `system-view
+interface GigabitEthernet{port}
+virtual-cable-test`, description: "Диагностика кабеля" },
       ],
     },
   },
@@ -656,11 +681,37 @@ config ports {port} state enable`, description: "Перезапуск порта
       ],
     },
     diagnostics: {
-      "Работа с портом": [
-        { command: `display interface GigabitEthernet0/0/{port}`, description: "Информация по порту" },
+      "Версия устройства": [
+        { command: `display version`, description: "Версия ПО" },
       ],
-      "Работа с VLAN": [
-        { command: `display vlan`, description: "Список VLAN" },
+      "Статус портов": [
+        { command: `display interface brief`, description: "Краткий статус интерфейсов" },
+        { command: `display interface description`, description: "Описание интерфейсов" },
+        { command: `display interface GigabitEthernet{port}`, description: "Информация по порту" },
+      ],
+      "Конфигурация портов": [
+        { command: `display current-configuration`, description: "Текущая конфигурация" },
+        { command: `display current-configuration interface GigabitEthernet{port}`, description: "Конфигурация порта" },
+        { command: `display protocol-vlan interface GigabitEthernet{port}`, description: "Protocol VLAN на порту" },
+      ],
+      "Просмотр MAC-адресов": [
+        { command: `display mac-address dynamic`, description: "Все MAC-адреса" },
+        { command: `display mac-address dynamic GigabitEthernet{port}`, description: "MAC на порту" },
+        { command: `display mac-address dynamic vlan {vlan}`, description: "MAC во VLAN" },
+      ],
+      "IGMP Snooping": [
+        { command: `display igmp-snooping port-info | include Eth{port}`, description: "IGMP Snooping по порту" },
+      ],
+      "Просмотр логов": [
+        { command: `display logbuffer`, description: "Логи" },
+      ],
+      "Сохранение": [
+        { command: `save`, description: "Сохранение конфигурации" },
+      ],
+      "Cable Diagnostic": [
+        { command: `system-view
+interface GigabitEthernet{port}
+virtual-cable-test`, description: "Диагностика кабеля" },
       ],
     },
   },

@@ -838,6 +838,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     document.getElementById('fttb-device').addEventListener('change', function() {
         // Автозаполнение порта
         const portInput = document.getElementById('fttb-port');
+        const portTypeGroup = document.getElementById('fttb-port-type-group');
         const modeGroup = document.getElementById('fttb-mode-group');
         const vlanFields = document.getElementById('fttb-vlan-fields');
         const branchGroup = document.getElementById('fttb-sib-branch-group');
@@ -857,6 +858,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             equipmentGroup?.classList.add('hidden');
             variantGroup?.classList.add('hidden');
             document.getElementById('fttb-sib-extra-group')?.classList.add('hidden');
+        }
+        const showPortType = this.value.startsWith('eltex') || this.value === 'huawei_switch' || this.value === 'huawei_3328';
+        if (!showPortType) {
+            portTypeGroup?.classList.add('hidden');
+        } else {
+            portTypeGroup?.classList.remove('hidden');
         }
         if (defaultPorts[this.value]) {
             portInput.value = defaultPorts[this.value];

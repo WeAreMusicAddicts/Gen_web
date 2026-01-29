@@ -200,9 +200,9 @@ oam loopback {portNum} {vpi} {vci} end-loopback 3`, description: "PVC test via O
         { command: `show vdsl2 snrmargin-prf SNR12`, description: "Просмотр конкретного профиля" },
       ],
       "Смена профиля": [
-        { command: `configure terminal`, description: "Вход в конфигурацию" },
-        { command: `interface vdsl_{slot}/{portNum}`, description: "Вход в интерфейс" },
-        { command: `vdsl2 snrmargin-prf SNR12`, description: "Установка профиля" },
+        { command: `configure terminal
+interface vdsl_{slot}/{portNum}
+vdsl2 snrmargin-prf SNR12`, description: "Смена профиля SNR" },
       ],
       "Работа с VLAN": [
         { command: `show vlan summary`, description: "Сводка по VLAN" },
