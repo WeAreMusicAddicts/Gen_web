@@ -517,7 +517,7 @@ config ports {port} state enable`, description: "Перезапуск порта
       ],
       "Безопасность": [
         { command: `show port_security`, description: "Статус port-security" },
-        { command: `config port_security {port} admin_state disable max_learning_addr 0 lock_address_mode DeleteOnTimeout`, description: "Сброс port-security на порту" },
+        { command: `config port_security ports {port} admin_state disable max_learning_addr 0 lock_address_mode DeleteOnTimeout`, description: "Сброс port-security на порту" },
       ],
       "Счетчики": [
         { command: `clear counters ports {port}`, description: "Сброс счетчиков на порту" },
