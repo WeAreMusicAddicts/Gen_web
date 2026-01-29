@@ -77,23 +77,19 @@ window.gponDevices = {
     },
     diagnostics: {
       "Информация об ONT": [
-        { command: `show interface ont {ontId}`, description: "Общая информация об ONT" },
-        { command: `show ont state {ontId}`, description: "Состояние ONT" },
-        { command: `show ont version {ontId}`, description: "Версия прошивки ONT" },
+        { command: `show interface ont {ontId} state`, description: "Статус ONT" },
       ],
       "Оптика": [
         { command: `show ont optical-info {ontId}`, description: "Оптические параметры" },
       ],
       "Конфигурация": [
-        { command: `show ont port {ontId}`, description: "Состояние портов ONT" },
-        { command: `show running-config ont {ontId}`, description: "Конфигурация ONT" },
+        { command: `show running-config interface ont {ontId}`, description: "Конфигурация ONT" },
       ],
       "Конфигурация (подробно)": [
         { command: `show interface ont {ontId} configuration`, description: "Подробная конфигурация ONT" },
-        { command: `show running-config interface ont {ontId}`, description: "Конфигурация ONT (running-config)" },
       ],
       "Состояние/сигнал": [
-        { command: `show interface ont {ontId} state`, description: "Состояние ONT" },
+        { command: `show interface ont {ontId} ports`, description: "Состояние портов ONT" },
         { command: `show interface ont {ontId} connections`, description: "Причины разрывов/соединения" },
         { command: `show interface ont {ontId} laser`, description: "Оптический сигнал ONT" },
       ],
@@ -146,27 +142,23 @@ window.gponDevices = {
     },
     diagnostics: {
       "Информация об ONT": [
-        { command: `show ont {ontId} info`, description: "Общая информация об ONT" },
-        { command: `show ont {ontId} state`, description: "Состояние ONT" },
+        { command: `show interface ont {ontId} state`, description: "Статус ONT" },
       ],
       "Оптика": [
-        { command: `show ont {ontId} optics`, description: "Оптические параметры" },
+        { command: `show interface ont {ontId} laser`, description: "Оптический сигнал ONT" },
       ],
       "Конфигурация": [
-        { command: `show ont {ontId} config`, description: "Конфигурация ONT" },
-        { command: `show interface pon detail`, description: "Детальная информация о PON интерфейсе" },
+        { command: `show running-config interface ont {ontId}`, description: "Конфигурация ONT" },
       ],
       "Конфигурация (подробно)": [
         { command: `show interface ont {ontId} configuration`, description: "Подробная конфигурация ONT" },
-        { command: `show running-config interface ont {ontId}`, description: "Конфигурация ONT (running-config)" },
       ],
       "Состояние/сигнал": [
-        { command: `show interface ont {ontId} state`, description: "Состояние ONT" },
+        { command: `show interface ont {ontId} ports`, description: "Состояние портов ONT" },
         { command: `show interface ont {ontId} connections`, description: "Причины разрывов/соединения" },
-        { command: `show interface ont {ontId} laser`, description: "Оптический сигнал ONT" },
       ],
       "MAC-таблица": [
-        { command: `show ont {ontId} mac-table`, description: "MAC-адреса на ONT" },
+        { command: `show mac interface ont {ontId}`, description: "MAC-адреса на ONT" },
       ],
     },
   },
