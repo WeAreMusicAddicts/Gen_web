@@ -333,6 +333,23 @@
                         <label for="gpon-ont"><i class="fas fa-hashtag"></i> GPON ID (x/y/z)</label>
                         <input type="text" id="gpon-ont" class="form-input" placeholder="например: 1/1/1">
                     </div>
+                    <div class="form-group-full" id="gpon-auth-fields">
+                        <label><i class="fas fa-user-lock"></i> Данные ONT</label>
+                        <div class="vlan-input-group vlan-input-group-row">
+                            <div class="vlan-field" id="gpon-sn-field">
+                                <label for="gpon-sn"><i class="fas fa-barcode"></i> SN ONT</label>
+                                <input type="text" id="gpon-sn" class="form-input" placeholder="например: 53434F4D1A05C17A">
+                            </div>
+                            <div class="vlan-field" id="gpon-ploam-field">
+                                <label for="gpon-ploam"><i class="fas fa-key"></i> PLOAM-пароль</label>
+                                <input type="text" id="gpon-ploam" class="form-input" placeholder="например: 1112223334">
+                            </div>
+                            <div class="vlan-field" id="gpon-description-field">
+                                <label for="gpon-description"><i class="fas fa-file-alt"></i> Описание (Description)</label>
+                                <input type="text" id="gpon-description" class="form-input" placeholder="например: Client Ivanov I.I.">
+                            </div>
+                        </div>
+                    </div>
                     <div class="form-group-full hidden" id="gpon-huawei-fields">
                         <label><i class="fas fa-network-wired"></i> VLAN и профили <a class="vlan-anchor" href="#diagnostics-section" title="К командам диагностики VLAN"><i class="fas fa-link"></i></a></label>
                         <div class="gpon-vlan-grid">
@@ -341,6 +358,9 @@
                             </div>
                             <div class="gpon-vlan-field">
                                 <input type="number" id="gpon-vlan-iptv" class="form-input form-input-sm" placeholder="IPTV">
+                            </div>
+                            <div class="gpon-vlan-field">
+                                <input type="number" id="gpon-iptv-sp-index" class="form-input form-input-sm" placeholder="IPTV SP">
                             </div>
                             <div class="gpon-vlan-field">
                                 <input type="number" id="gpon-vlan-voip" class="form-input form-input-sm" placeholder="VoIP">
@@ -402,14 +422,6 @@
                                     <option value="ims">IMS</option>
                                     <option value="vims">vIMS</option>
                                 </select>
-                            </div>
-                            <div class="vlan-field" id="gpon-sn-field">
-                                <label for="gpon-sn"><i class="fas fa-barcode"></i> SN ONT</label>
-                                <input type="text" id="gpon-sn" class="form-input" placeholder="например: 53434F4D1A05C17A">
-                            </div>
-                            <div class="vlan-field" id="gpon-ploam-field">
-                                <label for="gpon-ploam"><i class="fas fa-key"></i> PLOAM-пароль</label>
-                                <input type="text" id="gpon-ploam" class="form-input" placeholder="например: 1112223334">
                             </div>
                             <!-- Поля для CSM конфигураций -->
                             <div class="hidden" id="gpon-csm-fields">

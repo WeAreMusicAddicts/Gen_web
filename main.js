@@ -376,6 +376,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         const ontField = document.getElementById('gpon-ont').value.trim() || '4/2/11';
         const sn = document.getElementById('gpon-sn').value.trim();
         const ploam = document.getElementById('gpon-ploam').value.trim();
+        const gponDescription = document.getElementById('gpon-description').value.trim();
         const cvid = document.getElementById('gpon-cvid')?.value.trim() || '107';
         const svid = document.getElementById('gpon-svid')?.value.trim() || '1647';
 
@@ -398,6 +399,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             const doActivate = document.getElementById('gpon-action-activate').checked;
             const doPPPoE = document.getElementById('gpon-action-pppoe').checked;
             const doIPTV = document.getElementById('gpon-action-iptv').checked;
+            const iptvServicePortIndex = document.getElementById('gpon-iptv-sp-index')?.value.trim();
             const doVoIP = document.getElementById('gpon-action-voip').checked;
 
             const gponPort = `${frame}/${slot}/${ponPort}`;
@@ -422,8 +424,17 @@ document.addEventListener('DOMContentLoaded', async function() {
                 commands.push('undo interactive');
                 commands.push('config');
                 commands.push(`interface gpon ${frame}/${slot}`);
-                const pwd = ploam || '1112223334';
-                commands.push(`ont add ${ponPort} ${ontIdx} password-auth "${pwd}" always-on omci ont-lineprofile-id ${lineProfile} ont-srvprofile-id ${srvProfile} desc "ONT-${ontIdHuawei}"`);
+                const description = gponDescription || `ONT-${ontIdHuawei}`;
+                let authType = 'password-auth';
+                let authValue = '1112223334';
+                if (ploam) {
+                    authType = 'password-auth';
+                    authValue = ploam;
+                } else if (sn) {
+                    authType = 'sn-auth';
+                    authValue = sn;
+                }
+                commands.push(`ont add ${ponPort} ${ontIdx} ${authType} "${authValue}" always-on omci ont-lineprofile-id ${lineProfile} ont-srvprofile-id ${srvProfile} desc "${description}"`);
                 commands.push(`ont ipconfig ${ponPort} ${ontIdx} dhcp vlan 69 priority 7`);
                 commands.push('quit');
 
@@ -438,12 +449,15 @@ document.addEventListener('DOMContentLoaded', async function() {
                     commands.push('');
                     commands.push('############### ВНИМАНИЕ ###############');
                     commands.push('# Далее необходимо найти индекс сервис-порта для IPTV:');
-                    commands.push(`# display service-port port ${gponPort} ont ${ontIdx} gemport 1`);
-                    commands.push('# Замените *СЕРВИС ПОРТ (INDEX)* в командахниже на найденный индекс (2 места)');
+                    commands.push(`display service-port port ${gponPort} ont ${ontIdx} gemport 1`);
+                    if (!iptvServicePortIndex) {
+                        commands.push('# Замените *СЕРВИС ПОРТ (INDEX)* в командахниже на найденный индекс (2 места)');
+                    }
                     commands.push('btv');
-                    commands.push('igmp user add service-port *СЕРВИС ПОРТ (INDEX)* no-auth max-program 8');
+                    const igmpIndex = iptvServicePortIndex || '*СЕРВИС ПОРТ (INDEX)*';
+                    commands.push(`igmp user add service-port ${igmpIndex} no-auth max-program 8`);
                     commands.push(`multicast-vlan ${iptvVlan}`);
-                    commands.push('igmp multicast-vlan member service-port *СЕРВИС ПОРТ (INDEX)*');
+                    commands.push(`igmp multicast-vlan member service-port ${igmpIndex}`);
                     commands.push('quit');
                 }
 
@@ -468,12 +482,15 @@ document.addEventListener('DOMContentLoaded', async function() {
                     commands.push(`service-port vlan ${iptvVlan} gpon ${gponPort} ont ${ontIdx} gemport 1 multi-service user-vlan 40 tag-transform translate inbound traffic-table index 7 outbound traffic-table index 7`);
                     commands.push('');
                     commands.push('############### ВНИМАНИЕ ###############');
-                    commands.push(`# display service-port port ${gponPort} ont ${ontIdx} gemport 1`);
-                    commands.push('# Замените *СЕРВИС ПОРТ (INDEX)* в командахниже на найденный индекс (2 места)');
+                    commands.push(`display service-port port ${gponPort} ont ${ontIdx} gemport 1`);
+                    if (!iptvServicePortIndex) {
+                        commands.push('# Замените *СЕРВИС ПОРТ (INDEX)* в командахниже на найденный индекс (2 места)');
+                    }
                     commands.push('btv');
-                    commands.push('igmp user add service-port *СЕРВИС ПОРТ (INDEX)* no-auth max-program 8');
+                    const igmpOnlyIndex = iptvServicePortIndex || '*СЕРВИС ПОРТ (INDEX)*';
+                    commands.push(`igmp user add service-port ${igmpOnlyIndex} no-auth max-program 8`);
                     commands.push(`multicast-vlan ${iptvVlan}`);
-                    commands.push('igmp multicast-vlan member service-port *СЕРВИС ПОРТ (INDEX)*');
+                    commands.push(`igmp multicast-vlan member service-port ${igmpOnlyIndex}`);
                     commands.push('quit');
                     commands.push('return');
                 }
@@ -1146,6 +1163,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         document.getElementById('gpon-vlan').value = '500';
         document.getElementById('gpon-sn').value = '';
         document.getElementById('gpon-ploam').value = '';
+        const iptvSpIndex = document.getElementById('gpon-iptv-sp-index');
+        if (iptvSpIndex) iptvSpIndex.value = '';
+        document.getElementById('gpon-description').value = '';
         document.getElementById('gpon-cvid').value = '107';
         document.getElementById('gpon-svid').value = '1647';
         // Сбрасываем видимость полей для Huawei через функцию
