@@ -172,6 +172,19 @@ label {
     gap: 8px;
 }
 
+.vlan-anchor {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.85em;
+    color: var(--accent-secondary);
+    text-decoration: none;
+}
+
+.vlan-anchor:hover {
+    color: #34d399;
+}
+
 .info-icon {
     position: relative;
     display: inline-flex;
@@ -231,6 +244,24 @@ label {
     border-left: 8px solid transparent;
     border-right: 8px solid transparent;
     border-bottom: 8px solid var(--accent-primary);
+}
+
+.info-tooltip.info-tooltip-small {
+    min-width: 260px;
+    max-width: 360px;
+    padding: 10px 12px;
+}
+
+.tooltip-list {
+    margin: 0;
+    padding-left: 18px;
+    color: var(--text-primary);
+    font-size: 0.8rem;
+    line-height: 1.4;
+}
+
+.tooltip-list li {
+    margin: 6px 0;
 }
 
 .tooltip-table {

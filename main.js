@@ -212,7 +212,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             html = `
                 <div class="vlan-input-group vlan-input-group-row">
                     <div class="vlan-field">
-                        <label for="fttb-access-vlan">Access VLAN</label>
+                        <label for="fttb-access-vlan">Access VLAN <a class="vlan-anchor" href="#diagnostics-section" title="К командам диагностики VLAN"><i class="fas fa-link"></i></a></label>
                         <input type="number" id="fttb-access-vlan" class="form-input" placeholder="100" value="100">
                     </div>
                 </div>
@@ -221,7 +221,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             html = `
                 <div class="vlan-input-group vlan-input-group-row">
                     <div class="vlan-field">
-                        <label for="fttb-trunk-vlans">Allowed VLANs</label>
+                        <label for="fttb-trunk-vlans">Allowed VLANs <a class="vlan-anchor" href="#diagnostics-section" title="К командам диагностики VLAN"><i class="fas fa-link"></i></a></label>
                         <input type="text" id="fttb-trunk-vlans" class="form-input" placeholder="100,200,300" value="100,200,300">
                     </div>
                 </div>
@@ -230,11 +230,11 @@ document.addEventListener('DOMContentLoaded', async function() {
             html = `
                 <div class="vlan-input-group vlan-input-group-row">
                     <div class="vlan-field">
-                        <label for="fttb-trunk-vlans">Allowed VLANs</label>
+                        <label for="fttb-trunk-vlans">Allowed VLANs <a class="vlan-anchor" href="#diagnostics-section" title="К командам диагностики VLAN"><i class="fas fa-link"></i></a></label>
                         <input type="text" id="fttb-trunk-vlans" class="form-input" placeholder="100,200,300" value="100,200,300">
                     </div>
                     <div class="vlan-field">
-                        <label for="fttb-native-vlan">Native VLAN</label>
+                        <label for="fttb-native-vlan">Native VLAN <a class="vlan-anchor" href="#diagnostics-section" title="К командам диагностики VLAN"><i class="fas fa-link"></i></a></label>
                         <input type="number" id="fttb-native-vlan" class="form-input" placeholder="1" value="1">
                     </div>
                 </div>
@@ -243,15 +243,15 @@ document.addEventListener('DOMContentLoaded', async function() {
             html = `
                 <div class="vlan-input-group vlan-input-group-row">
                     <div class="vlan-field">
-                        <label for="fttb-tr069-vlan">TR-069 VLAN</label>
+                        <label for="fttb-tr069-vlan">TR-069 VLAN <a class="vlan-anchor" href="#diagnostics-section" title="К командам диагностики VLAN"><i class="fas fa-link"></i></a></label>
                         <input type="number" id="fttb-tr069-vlan" class="form-input" placeholder="700" value="700">
                     </div>
                     <div class="vlan-field">
-                        <label for="fttb-pppoe-vlan">PPPoE VLAN</label>
+                        <label for="fttb-pppoe-vlan">PPPoE VLAN <a class="vlan-anchor" href="#diagnostics-section" title="К командам диагностики VLAN"><i class="fas fa-link"></i></a></label>
                         <input type="number" id="fttb-pppoe-vlan" class="form-input" placeholder="101" value="101">
                     </div>
                     <div class="vlan-field">
-                        <label for="fttb-tagged-vlan">Tagged VLAN</label>
+                        <label for="fttb-tagged-vlan">Tagged VLAN <a class="vlan-anchor" href="#diagnostics-section" title="К командам диагностики VLAN"><i class="fas fa-link"></i></a></label>
                         <input type="number" id="fttb-tagged-vlan" class="form-input" placeholder="102" value="102">
                     </div>
                 </div>

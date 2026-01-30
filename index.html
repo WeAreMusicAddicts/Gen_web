@@ -187,11 +187,11 @@
                         <input type="text" id="adsl-vpivci" class="form-input" placeholder="например: 0/35" value="0/35">
                     </div>
                     <div class="form-group">
-                        <label for="adsl-vlan"><i class="fas fa-hashtag"></i> VLAN ID</label>
+                        <label for="adsl-vlan"><i class="fas fa-hashtag"></i> VLAN ID <a class="vlan-anchor" href="#diagnostics-section" title="К командам диагностики VLAN"><i class="fas fa-link"></i></a></label>
                         <input type="number" id="adsl-vlan" class="form-input" placeholder="например: 101" value="101">
                     </div>
                     <div class="form-group hidden" id="adsl-mcast-vlan-group">
-                        <label for="adsl-mcast-vlan"><i class="fas fa-broadcast-tower"></i> Multicast VLAN</label>
+                        <label for="adsl-mcast-vlan"><i class="fas fa-broadcast-tower"></i> Multicast VLAN <a class="vlan-anchor" href="#diagnostics-section" title="К командам диагностики VLAN"><i class="fas fa-link"></i></a></label>
                         <input type="number" id="adsl-mcast-vlan" class="form-input" placeholder="опционально: 101" value="">
                     </div>
                 </div>
@@ -235,7 +235,19 @@
                         <input type="text" id="fttb-port" class="form-input" placeholder="например: 1/0/1 или 0/1" value="1/0/1">
                     </div>
                     <div class="form-group" id="fttb-mode-group">
-                        <label for="fttb-mode"><i class="fas fa-filter"></i> Режим порта</label>
+                        <label for="fttb-mode"><i class="fas fa-filter"></i> Режим порта
+                            <span class="info-icon">
+                                <i class="fas fa-question-circle"></i>
+                                <div class="info-tooltip info-tooltip-small">
+                                    <ul class="tooltip-list">
+                                        <li><strong>Access</strong>: Одна услуга. Маркировка VLAN со стороны CPE не требуется.</li>
+                                        <li><strong>Trunk</strong>: Несколько услуг. CPE должна отправлять трафик с VLAN‑тегами.</li>
+                                        <li><strong>Trunk + Native</strong>: Одна услуга без тега + доп. услуги с VLAN‑тегами.</li>
+                                        <li><strong>Dot1v (QinQ)</strong>: TR069 и PPPoE без тега. Остальные услуги требуют VLAN‑тега.</li>
+                                    </ul>
+                                </div>
+                            </span>
+                        </label>
                         <select id="fttb-mode" class="form-select">
                             <option value="access">Access</option>
                             <option value="trunk">Trunk</option>
@@ -263,7 +275,7 @@
                     <div id="fttb-vlan-fields" class="form-group-full">
                         <div class="vlan-input-group vlan-input-group-row">
                             <div class="vlan-field">
-                                <label for="fttb-access-vlan">Access VLAN</label>
+                                <label for="fttb-access-vlan">Access VLAN <a class="vlan-anchor" href="#diagnostics-section" title="К командам диагностики VLAN"><i class="fas fa-link"></i></a></label>
                                 <input type="number" id="fttb-access-vlan" class="form-input" placeholder="100" value="100">
                             </div>
                         </div>
@@ -322,7 +334,7 @@
                         <input type="text" id="gpon-ont" class="form-input" placeholder="например: 1/1/1">
                     </div>
                     <div class="form-group-full hidden" id="gpon-huawei-fields">
-                        <label><i class="fas fa-network-wired"></i> VLAN и профили</label>
+                        <label><i class="fas fa-network-wired"></i> VLAN и профили <a class="vlan-anchor" href="#diagnostics-section" title="К командам диагностики VLAN"><i class="fas fa-link"></i></a></label>
                         <div class="gpon-vlan-grid">
                             <div class="gpon-vlan-field">
                                 <input type="number" id="gpon-vlan-pppoe" class="form-input form-input-sm" placeholder="PPPoE">
@@ -432,7 +444,7 @@
                 <pre id="config-output" class="config-output">
 // Выберите технологию, заполните поля и нажмите "Сгенерировать"
                 </pre>
-                <div class="diagnostics-section">
+                <div class="diagnostics-section" id="diagnostics-section">
                     <h4><i class="fas fa-stethoscope"></i> Команды диагностики</h4>
                     <div id="diagnostics-output" class="diagnostics-output"></div>
                 </div>
