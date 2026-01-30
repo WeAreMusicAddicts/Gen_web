@@ -42,9 +42,54 @@ window.gponDevices = {
     },
   },
 
+  electra: {
+    label: "Electra OLT",
+    services: {},
+    diagnostics: {
+      "Диагностика общая": [
+        { command: `show ont autofind all`, description: "Просмотр не активированных ONT" },
+        { command: `show current-config section ont {frameSlot} {ponPort} {ontIdx}`, description: "Просмотр конфигурации на ONT" },
+        { command: `show ont-line-profile gpon all`, description: "Просмотр списка линейных профилей на OLT" },
+        { command: `show ont-srv-profile gpon all`, description: "Просмотр списка сервис профилей на OLT" },
+        { command: `show ont-tr069-profile all`, description: "Просмотр списка tr-069 профилей на OLT" },
+        { command: `show multicast-vlan all`, description: "Диагностика Мультикаст" },
+        { command: `show current-config include pon {gponPort} ont {ontIdx} no-auth max-program 32`, description: "Просмотр User-Index для мультикаст VLAN" },
+        { command: `show ont info {frameSlot} {ponPort} all`, description: "Просмотр всех ONT ID на оптическом порту" },
+        { command: `show mac-address port pon {gponPort} ont {ontIdx}`, description: "Просмотр MAC-адресов на ONT ID" },
+        { command: `config\ninterface gpon {frameSlot}\nshow ont optical-info {ponPort} all`, description: "Просмотр мощности оптического сигнала всех ONT ID на оптическом порту" },
+        { command: `show mac-address all include {mac}`, description: "Поиск порта и ONT ID по MAC-адресу" },
+        { command: `show ont info by-sn {sn}`, description: "Поиск порта и ONT ID по SN" },
+        { command: `show ont info {frameSlot} {ponPort} {ontIdx}`, description: "Просмотр состояния ONT ID" },
+        { command: `config\ninterface gpon {frameSlot}\nshow ont optical-info {ponPort} {ontIdx}`, description: "Просмотр мощности оптического сигнала на ONT ID" },
+      ],
+      "Углубленная диагностика": [
+        { command: `show vlan all`, description: "Просмотр всех VLAN" },
+        { command: `show current-config`, description: "Просмотр глобальной конфигурации OLT" },
+        { command: `show mac-address all`, description: "Просмотр всех MAC-адресов" },
+        { command: `show mac-address vlan {svlan}`, description: "Просмотр MAC-адресов за VLAN" },
+        { command: `show mac-address port pon {gponPort}`, description: "Просмотр MAC-адресов на оптическом порту" },
+        { command: `show igmp group all`, description: "Просмотр мультикаст групп на OLT" },
+        { command: `show igmp group port pon {gponPort}`, description: "Просмотр мулькаст групп на оптическом порту" },
+        { command: `show ont info {frameSlot} {ponPort} all`, description: "Просмотр всех ONT ID на оптическом порту" },
+        { command: `config\ninterface gpon {frameSlot}\nshow ont port state {ponPort} {ontIdx} eth all`, description: "Просмотр состояния LAN-портов на ONT" },
+        { command: `show service-port gpon {frameSlot} port {ponPort}`, description: "Просмотр всех сервис портов на оптическом порту" },
+        { command: `show ont version {frameSlot} {ponPort} {ontIdx}`, description: "Просмотр модели ONT терминала" },
+        { command: `show ont info all online`, description: "Просмотр состояния всех ONLINE ONT ID на OLT" },
+        { command: `config\ninterface gpon {frameSlot}\nshow ont run-info {ponPort} all`, description: "Просмотр состояния всех ONT ID на оптическом порту с указанием статуса" },
+        { command: `show ont run-info all`, description: "Просмотр состояния всех ONT ID с указанием статуса" },
+        { command: `config\ninterface gpon {frameSlot}\nshow port state all`, description: "Просмотр состояния всех оптических портов" },
+        { command: `config\ninterface gpon {frameSlot}\nshow statistics ont {ponPort} {ontIdx}`, description: "Просмотр трафика на ONT ID" },
+        { command: `config\ninterface gpon {frameSlot}\nshow statistics port {ponPort}`, description: "Просмотр трафика на оптическом порту" },
+        { command: `config\ninterface gpon {frameSlot}\nshow statistics ont-line-quality {ponPort} {ontIdx}`, description: "Просмотр ошибок FEC/HEC на ONT ID" },
+        { command: `show dhcp security-table`, description: "Просмотр получения IP-адресов для CPE" },
+        { command: `show device`, description: "Просмотр информации о OLT" },
+      ],
+    },
+  },
+
   // Уральский филиал (по умолчанию)
   eltex_ma4000: {
-    label: "Eltex MA4000 (Урал)",
+    label: "Eltex MA4000",
     services: {
       ims: ({ ontId, sn, ploam }) => [
         `configure terminal`,
@@ -107,7 +152,7 @@ window.gponDevices = {
   },
 
   eltex_ltp: {
-    label: "Eltex LTP (Урал)",
+    label: "Eltex LTP",
     services: {
       ims: ({ ontId, sn, ploam }) => {
         const [slot = '1', port = '1'] = (ontId || '1/1').split('/');

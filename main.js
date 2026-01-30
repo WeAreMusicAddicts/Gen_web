@@ -45,6 +45,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     const defaultPorts = {
         // Huawei
         huawei: '1/1/1',
+        electra: '0/1/26',
         // Уральский филиал
         eltex_ma4000: '1/1/1',
         eltex_ltp: '1/1',
@@ -367,8 +368,12 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         // Определяем текущее устройство (из основного или из выбора филиала)
         let device = document.getElementById('gpon-device').value;
+        const branchSelect = document.getElementById('gpon-branch');
         const branchConfigSelect = document.getElementById('gpon-branch-config');
-        if (device === 'sib' && branchConfigSelect && branchConfigSelect.value) {
+        const branchValue = branchSelect?.value || 'ural';
+        const isSibBranch = branchValue !== 'ural';
+
+        if (isSibBranch && branchConfigSelect && branchConfigSelect.value) {
             device = branchConfigSelect.value;
         }
 
@@ -505,7 +510,78 @@ document.addEventListener('DOMContentLoaded', async function() {
                     commands.push('return');
                 }
             }
-        } else if (device === 'eltex_ma4000' || device === 'eltex_ltp') {
+        } else if (device === 'electra') {
+            const electraSn = document.getElementById('gpon-electra-sn')?.value.trim();
+            const electraDesc = document.getElementById('gpon-electra-description')?.value.trim();
+            const electraMac = document.getElementById('gpon-electra-mac')?.value.trim();
+            const tr069Vlan = document.getElementById('gpon-electra-tr069-vlan')?.value.trim() || '760';
+            const sVlan = document.getElementById('gpon-electra-svlan')?.value.trim() || '2460';
+            const cVlan = document.getElementById('gpon-electra-cvlan')?.value.trim() || '196';
+            const multicastVlan = document.getElementById('gpon-electra-mcast-vlan')?.value.trim() || '26';
+            const igmpIndex = document.getElementById('gpon-electra-igmp-index')?.value.trim() || '12';
+
+            const selectedElectraAction = document.querySelector('input[name="gpon-electra-action"]:checked')?.value || 'activate';
+            const doDelete = selectedElectraAction === 'delete';
+            const doReplace = selectedElectraAction === 'replace';
+            const doActivate = selectedElectraAction === 'activate';
+
+            const slot = ontParts[0] || '0';
+            const ponPort = ontParts[1] || '1';
+            const ontIdx = ontParts[2] || '1';
+            const frameSlot = `0/${slot}`;
+            const gponPortElectra = `0/${slot}/${ponPort}`;
+            const serial = electraSn || sn || '415457541820650F';
+            const description = electraDesc || gponDescription || '272004002965';
+
+            if (doDelete || doReplace || doActivate) {
+                commands.push('enable');
+            }
+
+            if (doDelete) {
+                commands.push('config');
+                commands.push(`interface gpon ${frameSlot}`);
+                commands.push(`ont delete ${ponPort} ${ontIdx}`);
+                commands.push('exit');
+                commands.push('exit');
+                commands.push('save');
+                commands.push('');
+            }
+
+            if (doReplace) {
+                commands.push('config');
+                commands.push(`interface gpon ${frameSlot}`);
+                commands.push(`ont modify ${ponPort} ${ontIdx} auth-type sn-auth ${serial}`);
+                commands.push('exit');
+                commands.push('exit');
+                commands.push('save');
+                commands.push('');
+            }
+
+            if (doActivate) {
+                commands.push('config');
+                commands.push(`interface gpon ${frameSlot}`);
+                commands.push(`ont add ${ponPort} ${ontIdx} sn-auth ${serial} ont-lineprofile-id 10 ont-srvprofile-id 10`);
+                commands.push(`ont description ${ponPort} ${ontIdx} ${description}`);
+                commands.push(`ont tr069-profile ${ponPort} ${ontIdx} ont-tr069profile-id 3`);
+                commands.push(`service-port autoindex vlan ${sVlan} gpon ${frameSlot} port ${ponPort} ont ${ontIdx} gemport 2 multi-service user-vlan 10 tag-action translate-and-add inner-vlan ${cVlan} inner-priority 0`);
+                commands.push(`service-port autoindex vlan ${tr069Vlan} gpon ${frameSlot} port ${ponPort} ont ${ontIdx} gemport 1 multi-service user-vlan 4094 tag-action translate-and-add inner-vlan 4094 inner-priority 0`);
+                commands.push(`igmp user add user-index autoindex pon ${gponPortElectra} ont ${ontIdx} no-auth max-program 32`);
+                commands.push('');
+                commands.push('! ===== ВНИМАНИЕ =====');
+                commands.push('! Заполните поле IGMP member user-index перед продолжением настройки');
+                commands.push(`show current-config include pon ${gponPortElectra} ont ${ontIdx} no-auth max-program 32`);
+                commands.push('! ====================');
+                commands.push(`multicast-vlan ${multicastVlan}`);
+                commands.push(`igmp member user-index ${igmpIndex}`);
+                commands.push('exit');
+                commands.push('exit');
+                commands.push('save');
+                if (electraMac) {
+                    commands.push('');
+                    commands.push(`! MAC ONT: ${electraMac}`);
+                }
+            }
+        } else if (!isSibBranch && (device === 'eltex_ma4000' || device === 'eltex_ltp')) {
             // Уральский филиал - используем IMS/vIMS
             if (devices.gpon[device]?.services?.[service]) {
                 commands = commands.concat(
@@ -711,6 +787,26 @@ document.addEventListener('DOMContentLoaded', async function() {
                     out = out.replace(/{ontIdx}/g, ontIdx);
                     out = out.replace(/{gponPort}/g, gponPort);
                     out = out.replace(/{frameSlot}/g, frameSlot);
+                } else if (device === 'electra' && portInfo) {
+                    const parts = String(portInfo).split('/').filter(Boolean);
+                    const slot = parts[0] || '';
+                    const ponPort = parts[1] || '';
+                    const ontIdx = parts[2] || '';
+                    const frame = '0';
+                    const frameSlot = slot ? `${frame}/${slot}` : '';
+                    const gponPort = slot && ponPort ? `${frame}/${slot}/${ponPort}` : '';
+                    const mac = document.getElementById('gpon-electra-mac')?.value.trim() || '{mac}';
+                    const sn = document.getElementById('gpon-electra-sn')?.value.trim() || '{sn}';
+                    const svlan = document.getElementById('gpon-electra-svlan')?.value.trim() || '{svlan}';
+                    out = out.replace(/{frame}/g, frame);
+                    out = out.replace(/{slot}/g, slot);
+                    out = out.replace(/{ponPort}/g, ponPort);
+                    out = out.replace(/{ontIdx}/g, ontIdx);
+                    out = out.replace(/{gponPort}/g, gponPort);
+                    out = out.replace(/{frameSlot}/g, frameSlot);
+                    out = out.replace(/{mac}/g, mac);
+                    out = out.replace(/{sn}/g, sn);
+                    out = out.replace(/{svlan}/g, svlan);
                 }
                 out = out.replace(/{port}/g, portInfo || '{port}').replace(/{ontId}/g, portInfo || '{ontId}');
             } else {
@@ -806,12 +902,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             portInfo = { portType, port: (document.getElementById('fttb-port').value || '1/0/1') };
             vlan = document.getElementById('fttb-access-vlan')?.value || '100';
         } else if (tech === 'gpon') {
-            device = document.getElementById('gpon-device').value;
-            const branchConfigSelect = document.getElementById('gpon-branch-config');
-            // Если выбран сибирский филиал, используем конкретную конфигурацию
-            if (device === 'sib' && branchConfigSelect && branchConfigSelect.value) {
-                device = branchConfigSelect.value;
-            }
+            device = getGponEffectiveDevice();
             portInfo = document.getElementById('gpon-ont').value || '';
             updateDiagnostics('gpon', device, portInfo, vlan);
             return;
@@ -899,55 +990,181 @@ document.addEventListener('DOMContentLoaded', async function() {
     });
 
     // Карта конфигураций для каждого филиала
+    // Siberia config map by OLT type
     const sibConfigs = {
-        af: [
-            { value: 'eltex_ma4000_af_csm', text: 'CSM' },
-            { value: 'eltex_ma4000_af_esm', text: 'ESM' },
-        ],
-        gaf: [
-            { value: 'eltex_ma4000_gaf_esm_v1', text: 'ESM В1' },
-            { value: 'eltex_ma4000_gaf_esm_v2', text: 'ESM В2' },
-            { value: 'eltex_ma4000_gaf_esm_v3', text: 'ESM В3' },
-        ],
-        nsk: [
-            { value: 'eltex_ma4000_nsk_csm', text: 'CSM' },
-            { value: 'eltex_ma4000_nsk_esm', text: 'ESM' },
-            { value: 'eltex_ma4000_nsk_esm_ipiptv', text: 'ESM (INT+IPTV+SIP)' },
-            { value: 'eltex_ltp_nsk_esm', text: 'ESM (LTP8-16N)' },
-            { value: 'eltex_ltp_nsk_csm', text: 'CSM (LTP8-16N)' },
-            { value: 'eltex_ma4000_nsk_ntu1', text: 'NTU-1' },
-            { value: 'eltex_ma4000_nsk_eos', text: 'Бывший Оператор ЕОС' },
-        ],
-        kem: [
-            { value: 'eltex_ma4000_kem_csm', text: 'CSM' },
-            { value: 'eltex_ma4000_kem_esm', text: 'ESM' },
-        ],
-        omsk: [
-            { value: 'eltex_ma4000_omsk_csm', text: 'CSM' },
-            { value: 'eltex_ma4000_omsk_esm', text: 'ESM' },
-        ],
-        tomsk: [
-            { value: 'eltex_ma4000_tomsk_csm', text: 'CSM' },
-            { value: 'eltex_ma4000_tomsk_esm', text: 'ESM' },
-        ],
-        buryatia: [
-            { value: 'eltex_ma4000_buryatia_csm', text: 'CSM' },
-            { value: 'eltex_ma4000_buryatia_esm', text: 'ESM' },
-        ],
-        zab: [
-            { value: 'eltex_ma4000_zab_csm', text: 'CSM' },
-            { value: 'eltex_ma4000_zab_esm', text: 'ESM' },
-        ],
-        irk: [
-            { value: 'eltex_ma4000_irk_csm', text: 'CSM' },
-            { value: 'eltex_ma4000_irk_esm', text: 'ESM' },
-        ],
-        kras: [
-            { value: 'eltex_ma4000_kras_csm', text: 'CSM' },
-            { value: 'eltex_ma4000_kras_esm', text: 'ESM' },
-            { value: 'eltex_ma4000_kras_hak_esm', text: 'ESM Хакасия' },
-        ],
+        ma4000: {
+            af: [
+                { value: 'eltex_ma4000_af_csm', text: 'CSM' },
+                { value: 'eltex_ma4000_af_esm', text: 'ESM' },
+            ],
+            gaf: [
+                { value: 'eltex_ma4000_gaf_esm_v1', text: 'ESM \u04121' },
+                { value: 'eltex_ma4000_gaf_esm_v2', text: 'ESM \u04122' },
+                { value: 'eltex_ma4000_gaf_esm_v3', text: 'ESM \u04123' },
+            ],
+            nsk: [
+                { value: 'eltex_ma4000_nsk_csm', text: 'CSM' },
+                { value: 'eltex_ma4000_nsk_esm', text: 'ESM' },
+                { value: 'eltex_ma4000_nsk_esm_ipiptv', text: 'ESM (INT+IPTV+SIP)' },
+                { value: 'eltex_ma4000_nsk_ntu1', text: 'NTU-1' },
+                { value: 'eltex_ma4000_nsk_eos', text: '\u0411\u044b\u0432\u0448\u0438\u0439 \u041e\u043f\u0435\u0440\u0430\u0442\u043e\u0440 \u0415\u041e\u0421' },
+            ],
+            kem: [
+                { value: 'eltex_ma4000_kem_csm', text: 'CSM' },
+                { value: 'eltex_ma4000_kem_esm', text: 'ESM' },
+            ],
+            omsk: [
+                { value: 'eltex_ma4000_omsk_csm', text: 'CSM' },
+                { value: 'eltex_ma4000_omsk_esm', text: 'ESM' },
+            ],
+            tomsk: [
+                { value: 'eltex_ma4000_tomsk_csm', text: 'CSM' },
+                { value: 'eltex_ma4000_tomsk_esm', text: 'ESM' },
+            ],
+            buryatia: [
+                { value: 'eltex_ma4000_buryatia_csm', text: 'CSM' },
+                { value: 'eltex_ma4000_buryatia_esm', text: 'ESM' },
+            ],
+            zab: [
+                { value: 'eltex_ma4000_zab_csm', text: 'CSM' },
+                { value: 'eltex_ma4000_zab_esm', text: 'ESM' },
+            ],
+            irk: [
+                { value: 'eltex_ma4000_irk_csm', text: 'CSM' },
+                { value: 'eltex_ma4000_irk_esm', text: 'ESM' },
+            ],
+            kras: [
+                { value: 'eltex_ma4000_kras_csm', text: 'CSM' },
+                { value: 'eltex_ma4000_kras_esm', text: 'ESM' },
+                { value: 'eltex_ma4000_kras_hak_esm', text: 'ESM \u0425\u0430\u043a\u0430\u0441\u0438\u044f' },
+            ],
+        },
+        ltp: {
+            nsk: [
+                { value: 'eltex_ltp_nsk_esm', text: 'ESM (LTP8-16N)' },
+                { value: 'eltex_ltp_nsk_csm', text: 'CSM (LTP8-16N)' },
+            ],
+        },
     };
+
+    function getSibConfigList(deviceValue, branch) {
+        if (!branch || branch === 'ural') return [];
+        if (deviceValue !== 'eltex_ma4000' && deviceValue !== 'eltex_ltp') return [];
+        const key = deviceValue === 'eltex_ltp' ? 'ltp' : 'ma4000';
+        return sibConfigs[key]?.[branch] || [];
+    }
+
+    function getGponEffectiveDevice() {
+        const deviceValue = document.getElementById('gpon-device')?.value || '';
+        const branchValue = document.getElementById('gpon-branch')?.value || 'ural';
+        const configValue = document.getElementById('gpon-branch-config')?.value || '';
+        if (branchValue !== 'ural' && configValue) return configValue;
+        return deviceValue;
+    }
+
+    function setDefaultGponOnt(deviceValue) {
+        const ontInput = document.getElementById('gpon-ont');
+        if (!ontInput) return;
+        if (deviceValue === 'huawei') {
+            ontInput.value = '1/1/1';
+        } else if (deviceValue === 'electra') {
+            ontInput.value = '0/1/26';
+        } else if (deviceValue === 'eltex_ltp' || deviceValue.startsWith('eltex_ltp_')) {
+            ontInput.value = '1/1';
+        } else {
+            ontInput.value = '4/2/11';
+        }
+    }
+
+    function syncGponBranchAvailability() {
+        const gponBranchSelect = document.getElementById('gpon-branch');
+        const gponDeviceSelect = document.getElementById('gpon-device');
+        if (!gponBranchSelect || !gponDeviceSelect) return;
+        if (gponDeviceSelect.value === 'huawei') {
+            gponBranchSelect.value = 'ural';
+            gponBranchSelect.disabled = true;
+        } else {
+            gponBranchSelect.disabled = false;
+        }
+    }
+
+    function updateGponBranchOptions() {
+        const gponBranchSelect = document.getElementById('gpon-branch');
+        const gponDeviceSelect = document.getElementById('gpon-device');
+        if (!gponBranchSelect || !gponDeviceSelect) return;
+
+        const deviceValue = gponDeviceSelect.value;
+        const ma4000Branches = Object.keys(sibConfigs.ma4000 || {});
+        const ltpBranches = Object.keys(sibConfigs.ltp || {});
+        const available = new Set(
+            deviceValue === 'eltex_ltp' ? ltpBranches : deviceValue === 'eltex_ma4000' ? ma4000Branches : []
+        );
+
+        Array.from(gponBranchSelect.options).forEach((opt) => {
+            if (opt.value === 'ural') {
+                opt.disabled = false;
+                opt.hidden = false;
+                return;
+            }
+            if (deviceValue === 'huawei' || deviceValue === 'electra') {
+                opt.disabled = true;
+                opt.hidden = true;
+                return;
+            }
+            if (deviceValue === 'eltex_ltp' || deviceValue === 'eltex_ma4000') {
+                const isAvailable = available.has(opt.value);
+                opt.disabled = !isAvailable;
+                opt.hidden = !isAvailable;
+                return;
+            }
+            opt.disabled = true;
+            opt.hidden = true;
+        });
+
+        if (gponBranchSelect.selectedOptions.length && gponBranchSelect.selectedOptions[0].disabled) {
+            gponBranchSelect.value = 'ural';
+        }
+    }
+
+    function updateGponBranchConfigOptions() {
+        const gponDeviceSelect = document.getElementById('gpon-device');
+        const gponBranchSelect = document.getElementById('gpon-branch');
+        const configGroup = document.getElementById('gpon-config-group');
+        const configSelect = document.getElementById('gpon-branch-config');
+        if (!gponDeviceSelect || !gponBranchSelect || !configGroup || !configSelect) return;
+
+        if (gponBranchSelect.value === 'ural' || gponDeviceSelect.value === 'huawei') {
+            configGroup.classList.add('hidden');
+            configSelect.innerHTML = '<option value="">-- \u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u043a\u043e\u043d\u0444\u0438\u0433\u0443\u0440\u0430\u0446\u0438\u044e --</option>';
+            configSelect.value = '';
+            return;
+        }
+
+        const configs = getSibConfigList(gponDeviceSelect.value, gponBranchSelect.value);
+        configSelect.innerHTML = '';
+
+        if (configs.length) {
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = '-- \u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u043a\u043e\u043d\u0444\u0438\u0433\u0443\u0440\u0430\u0446\u0438\u044e --';
+            configSelect.appendChild(option);
+            configs.forEach(config => {
+                const opt = document.createElement('option');
+                opt.value = config.value;
+                opt.textContent = config.text;
+                configSelect.appendChild(opt);
+            });
+        } else {
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = '-- \u041d\u0435\u0442 \u043a\u043e\u043d\u0444\u0438\u0433\u0443\u0440\u0430\u0446\u0438\u0439 \u0434\u043b\u044f \u0432\u044b\u0431\u0440\u0430\u043d\u043d\u043e\u0433\u043e \u043e\u0431\u043e\u0440\u0443\u0434\u043e\u0432\u0430\u043d\u0438\u044f --';
+            option.disabled = true;
+            option.selected = true;
+            configSelect.appendChild(option);
+        }
+
+        configGroup.classList.remove('hidden');
+    }
 
     // Проверка типа конфигурации (CSM или ESM)
     function isCsmConfig(deviceValue) {
@@ -969,131 +1186,145 @@ document.addEventListener('DOMContentLoaded', async function() {
     const zyxel1000Modulations = ['glite', 'gdmt', 't1413', 'auto', 'adsl2', 'adsl2+'];
 
     document.getElementById('gpon-device').addEventListener('change', function() {
-        const sibBranchGroup = document.getElementById('sib-branch-group');
-        const sibConfigGroup = document.getElementById('sib-config-group');
         const gponBranchSelect = document.getElementById('gpon-branch');
-        const gponBranchConfigSelect = document.getElementById('gpon-branch-config');
-
-        if (this.value === 'sib') {
-            // Показываем выбор филиала
-            if (sibBranchGroup) sibBranchGroup.classList.remove('hidden');
-            if (sibConfigGroup) sibConfigGroup.classList.add('hidden');
-            // Сбрасываем выбор
-            gponBranchConfigSelect.innerHTML = '<option value="">-- Выберите конфигурацию --</option>';
-        } else {
-            // Скрываем выбор филиала
-            if (sibBranchGroup) sibBranchGroup.classList.add('hidden');
-            if (sibConfigGroup) sibConfigGroup.classList.add('hidden');
-        }
-
-        // Автозаполнение порта
         const ontInput = document.getElementById('gpon-ont');
-        if (this.value === 'huawei') {
-            ontInput.value = '1/1/1';
-        } else if (this.value === 'eltex_ltp') {
-            ontInput.value = '1/1';
-        } else {
-            ontInput.value = '4/2/11';
+
+        if (this.value === 'huawei' && gponBranchSelect) {
+            gponBranchSelect.value = 'ural';
         }
+
+        syncGponBranchAvailability();
+        updateGponBranchOptions();
+        updateGponBranchConfigOptions();
+
+        const effectiveDevice = getGponEffectiveDevice();
+        setDefaultGponOnt(effectiveDevice);
         clearConfigOutput();
 
-        updateGponFields(this.value);
-        updateDiagnostics('gpon', this.value, ontInput.value);
+        updateGponFields();
+        updateDiagnostics('gpon', effectiveDevice, ontInput.value);
     });
 
     // Обработчик выбора филиала
     document.getElementById('gpon-branch').addEventListener('change', function() {
-        const sibConfigGroup = document.getElementById('sib-config-group');
-        const gponBranchConfigSelect = document.getElementById('gpon-branch-config');
-        const branch = this.value;
+        const gponDeviceSelect = document.getElementById('gpon-device');
         const ontInput = document.getElementById('gpon-ont');
 
-        // Очищаем конфиг
         clearConfigOutput();
 
-            if (branch && sibConfigs[branch]) {
-                // Заполняем список конфигураций
-                gponBranchConfigSelect.innerHTML = '<option value="">-- Выберите конфигурацию --</option>';
-                sibConfigs[branch].forEach(config => {
-                    const option = document.createElement('option');
-                    option.value = config.value;
-                    option.textContent = config.text;
-                    gponBranchConfigSelect.appendChild(option);
-                });
-                if (sibConfigGroup) sibConfigGroup.classList.remove('hidden');
-                // Устанавливаем порт для Сибири
-                ontInput.value = '4/2/11';
-                // Скрываем Huawei-поля, показываем Eltex-поля (без IMS/vIMS)
-                updateGponFields('sib');
-            } else {
-                if (sibConfigGroup) sibConfigGroup.classList.add('hidden');
-                // Возвращаем Huawei-поля
-                updateGponFields('huawei');
-                ontInput.value = '1/1/1';
-            }
+        if (gponDeviceSelect?.value === 'huawei' && this.value !== 'ural') {
+            gponDeviceSelect.value = 'eltex_ma4000';
+        }
+
+        syncGponBranchAvailability();
+        updateGponBranchOptions();
+        updateGponBranchConfigOptions();
+
+        const effectiveDevice = getGponEffectiveDevice();
+        setDefaultGponOnt(effectiveDevice);
+
+        updateGponFields();
+        updateDiagnostics('gpon', effectiveDevice, ontInput.value);
     });
 
     // Обработчик выбора конфигурации филиала
     document.getElementById('gpon-branch-config').addEventListener('change', function() {
-        const selectedValue = this.value;
         const ontInput = document.getElementById('gpon-ont');
+        const selectedValue = this.value;
 
         clearConfigOutput();
 
         if (selectedValue) {
-            ontInput.value = selectedValue.startsWith('eltex_ltp_') ? '1/1' : '4/2/11';
+            setDefaultGponOnt(selectedValue);
+        } else {
+            setDefaultGponOnt(getGponEffectiveDevice());
         }
 
-        updateGponFields(selectedValue);
-        updateDiagnostics('gpon', selectedValue, ontInput.value);
+        updateGponFields();
+        updateDiagnostics('gpon', getGponEffectiveDevice(), ontInput.value);
+    });
+
+    // Обновление диагностики Electra при вводе MAC/SN/SVLAN
+    ['gpon-electra-mac', 'gpon-electra-sn', 'gpon-electra-svlan'].forEach((fieldId) => {
+        const field = document.getElementById(fieldId);
+        if (!field) return;
+        field.addEventListener('input', () => {
+            if (getGponEffectiveDevice() !== 'electra') return;
+            const ontInput = document.getElementById('gpon-ont');
+            updateDiagnostics('gpon', 'electra', ontInput?.value || '');
+        });
     });
 
     // Функция обновления полей GPON
-    function updateGponFields(deviceValue) {
+    function updateGponFields() {
         const gponForm = document.getElementById('gpon-form');
         const eltexFields = document.getElementById('gpon-eltex-fields');
         const huaweiFields = document.getElementById('gpon-huawei-fields');
         const huaweiActions = document.getElementById('gpon-huawei-actions');
+        const electraFields = document.getElementById('gpon-electra-fields');
+        const electraActions = document.getElementById('gpon-electra-actions');
+        const gponBranchGroup = document.getElementById('gpon-branch-group');
+        const gponConfigGroup = document.getElementById('gpon-config-group');
         const gponService = document.getElementById('gpon-service').parentElement;
         const csmFields = document.getElementById('gpon-csm-fields');
+        const deviceValue = document.getElementById('gpon-device')?.value || '';
+        const branchValue = document.getElementById('gpon-branch')?.value || 'ural';
+        const configValue = document.getElementById('gpon-branch-config')?.value || '';
+        const isSibBranch = branchValue !== 'ural';
+        const effectiveDevice = isSibBranch && configValue ? configValue : deviceValue;
 
-        // По умолчанию скрываем всё
+        // Hide all by default
         gponForm?.classList.remove('gpon-ural');
         gponForm?.classList.remove('gpon-sib');
         gponForm?.classList.remove('gpon-ltp');
+        gponForm?.classList.remove('gpon-electra');
         eltexFields.classList.add('hidden');
         huaweiFields.classList.add('hidden');
         huaweiActions.classList.add('hidden');
+        electraFields.classList.add('hidden');
+        electraActions.classList.add('hidden');
         gponService.classList.add('hidden');
         csmFields.classList.add('hidden');
 
-        if (!deviceValue) return;
+        if (!effectiveDevice) return;
 
-        if (deviceValue === 'huawei') {
-            // Huawei - показываем Huawei-поля
+        if (effectiveDevice === 'huawei') {
+            // Huawei - show Huawei fields
             huaweiFields.classList.remove('hidden');
             huaweiActions.classList.remove('hidden');
-        } else if (deviceValue === 'eltex_ma4000' || deviceValue === 'eltex_ltp') {
-            // Урал - показываем Eltex-поля (SN/PLOAM + IMS/vIMS), скрываем cvid/svid
+            if (gponBranchGroup) gponBranchGroup.classList.remove('hidden');
+            return;
+        }
+
+        if (effectiveDevice === 'electra') {
+            // Electra - show Electra fields/actions
             gponForm?.classList.add('gpon-ural');
-            if (deviceValue === 'eltex_ltp') gponForm?.classList.add('gpon-ltp');
+            gponForm?.classList.add('gpon-electra');
+            electraFields.classList.remove('hidden');
+            electraActions.classList.remove('hidden');
+            if (gponBranchGroup) gponBranchGroup.classList.add('hidden');
+            if (gponConfigGroup) gponConfigGroup.classList.add('hidden');
+            return;
+        }
+
+        if (!isSibBranch) {
+            // Ural - show Eltex fields (SN/PLOAM + IMS/vIMS)
+            gponForm?.classList.add('gpon-ural');
+            if (effectiveDevice === 'eltex_ltp') gponForm?.classList.add('gpon-ltp');
             eltexFields.classList.remove('hidden');
             gponService.classList.remove('hidden');
-        } else if (deviceValue === 'sib') {
-            // Сибирь - выбран филиал, но не выбрана конфигурация
-            // Показываем Eltex-поля БЕЗ IMS/vIMS
-            gponForm?.classList.add('gpon-sib');
-            eltexFields.classList.remove('hidden');
-        } else if (deviceValue.startsWith('eltex_')) {
-            // Сибирь - конкретная конфигурация Eltex
-            gponForm?.classList.add('gpon-sib');
-            if (deviceValue.startsWith('eltex_ltp_')) gponForm?.classList.add('gpon-ltp');
-            eltexFields.classList.remove('hidden');
-            // Показываем cvid/svid только для CSM
-            if (isCsmConfig(deviceValue)) {
-                csmFields.classList.remove('hidden');
-            }
+            if (gponBranchGroup) gponBranchGroup.classList.remove('hidden');
+            return;
         }
+
+        // Siberia - show Eltex fields without IMS/vIMS
+        gponForm?.classList.add('gpon-sib');
+        if (effectiveDevice.startsWith('eltex_ltp')) gponForm?.classList.add('gpon-ltp');
+        eltexFields.classList.remove('hidden');
+        if (configValue && isCsmConfig(effectiveDevice)) {
+            csmFields.classList.remove('hidden');
+        }
+        if (gponBranchGroup) gponBranchGroup.classList.remove('hidden');
     }
 
     // Копирование конфига в буфер обмена
@@ -1168,9 +1399,36 @@ document.addEventListener('DOMContentLoaded', async function() {
         document.getElementById('gpon-description').value = '';
         document.getElementById('gpon-cvid').value = '107';
         document.getElementById('gpon-svid').value = '1647';
-        // Сбрасываем видимость полей для Huawei через функцию
-        updateGponFields('huawei');
-        configOutput.textContent = '// Выберите технологию, заполните поля и нажмите "Сгенерировать"';
+        const electraSnField = document.getElementById('gpon-electra-sn');
+        const electraDescField = document.getElementById('gpon-electra-description');
+        const electraMacField = document.getElementById('gpon-electra-mac');
+        const electraTr069Field = document.getElementById('gpon-electra-tr069-vlan');
+        const electraSvlanField = document.getElementById('gpon-electra-svlan');
+        const electraCvlanField = document.getElementById('gpon-electra-cvlan');
+        const electraMcastField = document.getElementById('gpon-electra-mcast-vlan');
+        const electraIgmpField = document.getElementById('gpon-electra-igmp-index');
+        if (electraSnField) electraSnField.value = '';
+        if (electraDescField) electraDescField.value = '';
+        if (electraMacField) electraMacField.value = '';
+        if (electraTr069Field) electraTr069Field.value = '760';
+        if (electraSvlanField) electraSvlanField.value = '2460';
+        if (electraCvlanField) electraCvlanField.value = '196';
+        if (electraMcastField) electraMcastField.value = '26';
+        if (electraIgmpField) electraIgmpField.value = '12';
+        const electraActivate = document.getElementById('gpon-electra-action-activate');
+        if (electraActivate) electraActivate.checked = true;
+        const gponBranchSelect = document.getElementById('gpon-branch');
+        const gponBranchConfigSelect = document.getElementById('gpon-branch-config');
+        if (gponBranchSelect) gponBranchSelect.value = 'ural';
+        if (gponBranchConfigSelect) gponBranchConfigSelect.value = '';
+
+        syncGponBranchAvailability();
+        updateGponBranchOptions();
+        updateGponBranchConfigOptions();
+        setDefaultGponOnt('huawei');
+        updateGponFields();
+
+        configOutput.textContent = '// \u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u0442\u0435\u0445\u043d\u043e\u043b\u043e\u0433\u0438\u044e, \u0437\u0430\u043f\u043e\u043b\u043d\u0438\u0442\u0435 \u043f\u043e\u043b\u044f \u0438 \u043d\u0430\u0436\u043c\u0438\u0442\u0435 "\u0421\u0433\u0435\u043d\u0435\u0440\u0438\u0440\u043e\u0432\u0430\u0442\u044c"';
         updateDiagnostics('gpon', 'huawei', '1/1/1');
     });
 
@@ -1991,10 +2249,19 @@ document.addEventListener('DOMContentLoaded', async function() {
                     isValid = false;
                 } else {
                     let device = document.getElementById('gpon-device')?.value || '';
+                    const branchValue = document.getElementById('gpon-branch')?.value || 'ural';
                     const branchConfigSelect = document.getElementById('gpon-branch-config');
-                    if (device === 'sib' && branchConfigSelect && branchConfigSelect.value) {
-                        device = branchConfigSelect.value;
+
+                    if (branchValue !== 'ural') {
+                        if (!branchConfigSelect?.value) {
+                            showFieldError(branchConfigSelect, '\u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u043a\u043e\u043d\u0444\u0438\u0433\u0443\u0440\u0430\u0446\u0438\u044e \u0434\u043b\u044f \u0444\u0438\u043b\u0438\u0430\u043b\u0430');
+                            isValid = false;
+                        } else {
+                            showFieldValid(branchConfigSelect);
+                            device = branchConfigSelect.value;
+                        }
                     }
+
                     const isLtpDevice = device === 'eltex_ltp' || device.startsWith('eltex_ltp_');
                     const parts = value.split('/');
                     const expectedParts = isLtpDevice ? 2 : 3;
@@ -2061,7 +2328,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
     
     // Инициализация видимости полей GPON (Huawei по умолчанию)
-    updateGponFields('huawei');
+    syncGponBranchAvailability();
+    updateGponBranchOptions();
+    updateGponBranchConfigOptions();
+    setDefaultGponOnt(getGponEffectiveDevice());
+    updateGponFields();
 
     // Начальная инициализация диагностики
     if (Object.keys(devices.adsl).length > 0) {

@@ -300,38 +300,36 @@
                         <label for="gpon-device"><i class="fas fa-server"></i> Оборудование</label>
                         <select id="gpon-device" class="form-select">
                             <option value="huawei">Huawei OLT</option>
-                            <option value="eltex_ma4000">Eltex MA4000 (Урал)</option>
-                            <option value="eltex_ltp">Eltex LTP (Урал)</option>
-                            <option value="sib">Сибирские филиалы...</option>
-                        </select>
-                    </div>
-                    <!-- Скрытое поле для выбора филиала -->
-                    <div class="form-group hidden" id="sib-branch-group">
-                        <label for="gpon-branch"><i class="fas fa-map-marker-alt"></i> Филиал</label>
-                        <select id="gpon-branch" class="form-select">
-                            <option value="">-- Выберите филиал --</option>
-                            <option value="af">Алтай (АФ)</option>
-                            <option value="gaf">Горный Алтай (гАФ)</option>
-                            <option value="nsk">Новосибирский (НФ)</option>
-                            <option value="kem">Кемеровский (КемФ)</option>
-                            <option value="omsk">Омский (ОФ)</option>
-                            <option value="tomsk">Томский (ТФ)</option>
-                            <option value="buryatia">Бурятия (БФЛ)</option>
-                            <option value="zab">Забайкалье (ЗабФ)</option>
-                            <option value="irk">Иркутский (ИФ)</option>
-                            <option value="kras">Красноярский (КрФ)</option>
-                        </select>
-                    </div>
-                    <!-- Скрытое поле для выбора конфигурации -->
-                    <div class="form-group hidden" id="sib-config-group">
-                        <label for="gpon-branch-config"><i class="fas fa-cog"></i> Конфигурация</label>
-                        <select id="gpon-branch-config" class="form-select">
-                            <option value="">-- Выберите конфигурацию --</option>
+                            <option value="eltex_ma4000">Eltex MA4000</option>
+                            <option value="eltex_ltp">Eltex LTP</option>
+                            <option value="electra">Electra</option>
                         </select>
                     </div>
                     <div class="form-group">
                         <label for="gpon-ont"><i class="fas fa-hashtag"></i> GPON ID (x/y/z)</label>
                         <input type="text" id="gpon-ont" class="form-input" placeholder="например: 1/1/1">
+                    </div>
+                    <div class="form-group" id="gpon-branch-group">
+                        <label for="gpon-branch"><i class="fas fa-map-marker-alt"></i> &#1060;&#1080;&#1083;&#1080;&#1072;&#1083;</label>
+                        <select id="gpon-branch" class="form-select">
+                            <option value="ural" selected>&#1059;&#1088;&#1072;&#1083;</option>
+                            <option value="af">&#1040;&#1083;&#1090;&#1072;&#1081; (&#1040;&#1060;)</option>
+                            <option value="gaf">&#1043;&#1086;&#1088;&#1085;&#1099;&#1081; &#1040;&#1083;&#1090;&#1072;&#1081; (&#1075;&#1040;&#1060;)</option>
+                            <option value="nsk">&#1053;&#1086;&#1074;&#1086;&#1089;&#1080;&#1073;&#1080;&#1088;&#1089;&#1082;&#1080;&#1081; (&#1053;&#1060;)</option>
+                            <option value="kem">&#1050;&#1077;&#1084;&#1077;&#1088;&#1086;&#1074;&#1089;&#1082;&#1080;&#1081; (&#1050;&#1077;&#1084;&#1060;)</option>
+                            <option value="omsk">&#1054;&#1084;&#1089;&#1082;&#1080;&#1081; (&#1054;&#1060;)</option>
+                            <option value="tomsk">&#1058;&#1086;&#1084;&#1089;&#1082;&#1080;&#1081; (&#1058;&#1060;)</option>
+                            <option value="buryatia">&#1041;&#1091;&#1088;&#1103;&#1090;&#1080;&#1103; (&#1041;&#1060;&#1051;)</option>
+                            <option value="zab">&#1047;&#1072;&#1073;&#1072;&#1081;&#1082;&#1072;&#1083;&#1100;&#1077; (&#1047;&#1072;&#1073;&#1060;)</option>
+                            <option value="irk">&#1048;&#1088;&#1082;&#1091;&#1090;&#1089;&#1082;&#1080;&#1081; (&#1048;&#1060;)</option>
+                            <option value="kras">&#1050;&#1088;&#1072;&#1089;&#1085;&#1086;&#1103;&#1088;&#1089;&#1082;&#1080;&#1081; (&#1050;&#1088;&#1060;)</option>
+                        </select>
+                    </div>
+                    <div class="form-group hidden" id="gpon-config-group">
+                        <label for="gpon-branch-config"><i class="fas fa-cog"></i> &#1050;&#1086;&#1085;&#1092;&#1080;&#1075;&#1091;&#1088;&#1072;&#1094;&#1080;&#1103;</label>
+                        <select id="gpon-branch-config" class="form-select">
+                            <option value="">-- &#1042;&#1099;&#1073;&#1077;&#1088;&#1080;&#1090;&#1077; &#1082;&#1086;&#1085;&#1092;&#1080;&#1075;&#1091;&#1088;&#1072;&#1094;&#1080;&#1102; --</option>
+                        </select>
                     </div>
                     <div class="form-group-full" id="gpon-auth-fields">
                         <label><i class="fas fa-user-lock"></i> Данные ONT</label>
@@ -434,6 +432,78 @@
                                     <input type="number" id="gpon-svid" class="form-input" placeholder="например: 1647" value="1647">
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                                        <div class="form-group-full hidden" id="gpon-electra-fields">
+                        <label><i class="fas fa-bolt"></i> Electra GPON</label>
+                        <div class="vlan-input-group">
+                            <div class="vlan-input-group-row">
+                                <div class="vlan-field">
+                                    <label for="gpon-electra-sn"><i class="fas fa-barcode"></i> S/N</label>
+                                    <input type="text" id="gpon-electra-sn" class="form-input" placeholder="например: 415457541820650F">
+                                </div>
+                                <div class="vlan-field">
+                                    <label for="gpon-electra-description"><i class="fas fa-file-alt"></i> Описание (Description)</label>
+                                    <input type="text" id="gpon-electra-description" class="form-input" placeholder="например: 272004002965">
+                                </div>
+                                <div class="vlan-field">
+                                    <label for="gpon-electra-mac"><i class="fas fa-network-wired"></i> MAC ONT</label>
+                                    <input type="text" id="gpon-electra-mac" class="form-input" placeholder="например: 58:F8:5C:7E:03:EA">
+                                </div>
+                            </div>
+                            <div class="vlan-input-group-row">
+                                <div class="vlan-field">
+                                    <label for="gpon-electra-tr069-vlan"><i class="fas fa-hashtag"></i> TR-069 VLAN</label>
+                                    <input type="number" id="gpon-electra-tr069-vlan" class="form-input" placeholder="например: 760" value="760">
+                                </div>
+                                <div class="vlan-field">
+                                    <label for="gpon-electra-svlan"><i class="fas fa-tag"></i> S-VLAN</label>
+                                    <input type="number" id="gpon-electra-svlan" class="form-input" placeholder="например: 2460" value="2460">
+                                </div>
+                                <div class="vlan-field">
+                                    <label for="gpon-electra-cvlan"><i class="fas fa-tag"></i> C-VLAN</label>
+                                    <input type="number" id="gpon-electra-cvlan" class="form-input" placeholder="например: 196" value="196">
+                                </div>
+                                <div class="vlan-field">
+                                    <label for="gpon-electra-mcast-vlan"><i class="fas fa-broadcast-tower"></i> Multicast VLAN</label>
+                                    <input type="number" id="gpon-electra-mcast-vlan" class="form-input" placeholder="например: 26" value="26">
+                                </div>
+                            </div>
+                            <div class="vlan-input-group-row">
+                                <div class="vlan-field">
+                                    <label for="gpon-electra-igmp-index"><i class="fas fa-users"></i> IGMP member user-index</label>
+                                    <input type="number" id="gpon-electra-igmp-index" class="form-input" placeholder="например: 12" value="12">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group-full hidden" id="gpon-electra-actions">
+                        <label><i class="fas fa-tasks"></i> Действия Electra</label>
+                        <div class="gpon-actions-grid">
+                            <label class="gpon-checkbox gpon-checkbox-sm">
+                                <input type="radio" id="gpon-electra-action-activate" name="gpon-electra-action" value="activate" checked>
+                                <span class="checkbox-mark"></span>
+                                <span class="checkbox-text">
+                                    <span class="checkbox-title">Активация</span>
+                                    <span class="checkbox-desc">Добавить ONT + сервисы</span>
+                                </span>
+                            </label>
+                            <label class="gpon-checkbox gpon-checkbox-sm">
+                                <input type="radio" id="gpon-electra-action-replace" name="gpon-electra-action" value="replace">
+                                <span class="checkbox-mark"></span>
+                                <span class="checkbox-text">
+                                    <span class="checkbox-title">Замена терминала</span>
+                                    <span class="checkbox-desc">Замена SN на ONT</span>
+                                </span>
+                            </label>
+                            <label class="gpon-checkbox gpon-checkbox-sm">
+                                <input type="radio" id="gpon-electra-action-delete" name="gpon-electra-action" value="delete">
+                                <span class="checkbox-mark"></span>
+                                <span class="checkbox-text">
+                                    <span class="checkbox-title">Удаление</span>
+                                    <span class="checkbox-desc">Удалить ONT ID</span>
+                                </span>
+                            </label>
                         </div>
                     </div>
                 </div>

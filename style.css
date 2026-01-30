@@ -163,6 +163,15 @@ body {
     width: auto;
 }
 
+#gpon-electra-fields .vlan-input-group-row {
+    flex-wrap: wrap !important;
+}
+
+#gpon-electra-fields .vlan-field {
+    flex: 1 1 220px;
+    max-width: 280px;
+}
+
 label {
     font-weight: 600;
     margin-bottom: 8px;
@@ -825,7 +834,8 @@ label {
     justify-content: center;
 }
 
-.gpon-checkbox input[type="checkbox"] {
+.gpon-checkbox input[type="checkbox"],
+.gpon-checkbox input[type="radio"] {
     display: none;
 }
 
@@ -850,12 +860,14 @@ label {
     border-radius: 4px;
 }
 
-.gpon-checkbox input[type="checkbox"]:checked + .checkbox-mark {
+.gpon-checkbox input[type="checkbox"]:checked + .checkbox-mark,
+.gpon-checkbox input[type="radio"]:checked + .checkbox-mark {
     background-color: var(--accent-primary);
     border-color: var(--accent-primary);
 }
 
-.gpon-checkbox input[type="checkbox"]:checked + .checkbox-mark::after {
+.gpon-checkbox input[type="checkbox"]:checked + .checkbox-mark::after,
+.gpon-checkbox input[type="radio"]:checked + .checkbox-mark::after {
     content: '';
     position: absolute;
     width: 5px;
@@ -866,7 +878,8 @@ label {
     top: 2px;
 }
 
-.gpon-checkbox-sm input[type="checkbox"]:checked + .checkbox-mark::after {
+.gpon-checkbox-sm input[type="checkbox"]:checked + .checkbox-mark::after,
+.gpon-checkbox-sm input[type="radio"]:checked + .checkbox-mark::after {
     width: 4px;
     height: 7px;
     top: 1px;
@@ -910,6 +923,10 @@ label {
 }
 
 #gpon-form.gpon-sib #gpon-ploam-field {
+    display: none !important;
+}
+
+#gpon-form.gpon-electra #gpon-auth-fields {
     display: none !important;
 }
 
