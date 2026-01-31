@@ -6,6 +6,7 @@ window.fttbDevices = {
     label: "Eltex 24xx",
     modes: {
       access: ({ portType, port, accessVlan, desc }) => [
+        `configure terminal`,
         `interface ${portType} ${port}`,
         `  switchport mode access`,
         `  switchport access vlan ${accessVlan}`,
@@ -16,6 +17,7 @@ window.fttbDevices = {
         `  exit`,
       ],
       trunk: ({ portType, port, allowedVlans, desc }) => [
+        `configure terminal`,
         `interface ${portType} ${port}`,
         `  switchport mode trunk`,
         `  switchport trunk allowed vlan ${allowedVlans}`,
@@ -24,6 +26,7 @@ window.fttbDevices = {
         `  exit`,
       ],
       trunk_native: ({ portType, port, allowedVlans, nativeVlan, desc }) => [
+        `configure terminal`,
         `interface ${portType} ${port}`,
         `  switchport mode trunk`,
         `  switchport trunk native vlan ${nativeVlan}`,
@@ -64,11 +67,12 @@ window.fttbDevices = {
         { command: `show running-config interface {portType} {port}`, description: "Текущая конфигурация порта" },
         { command: `show vlan id {vlan}`, description: "Информация по VLAN" },
         { command: `show vlan brief`, description: "Список VLAN" },
+        { command: `configure terminal\ndefault interface {portType} {port}`, description: "Сброс конфигурации порта." },
       ],
       "MAC-таблица": [
-        { command: `show mac address-table interface {portType} {port}`, description: "MAC на конкретном порту" },
-        { command: `show mac address-table`, description: "Глобальная MAC-таблица" },
-        { command: `show mac address-table vlan {vlan}`, description: "MAC внутри VLAN" },
+        { command: `show mac-address-table interface {portType} {port}`, description: "MAC на конкретном порту" },
+        { command: `show mac-address-table`, description: "Глобальная MAC-таблица" },
+        { command: `show mac-address-table vlan {vlan}`, description: "MAC внутри VLAN" },
       ],
       "STP/Безопасность": [
         { command: `show spanning-tree interface {portType} {port}`, description: "STP состояние на порту" },
@@ -81,6 +85,7 @@ window.fttbDevices = {
     label: "Eltex (общий)",
     modes: {
       access: ({ portType, port, accessVlan, desc }) => [
+        `configure terminal`,
         `interface ${portType} ${port}`,
         `  switchport mode access`,
         `  switchport access vlan ${accessVlan}`,
@@ -89,6 +94,7 @@ window.fttbDevices = {
         `  exit`,
       ],
       trunk: ({ portType, port, allowedVlans, desc }) => [
+        `configure terminal`,
         `interface ${portType} ${port}`,
         `  switchport mode trunk`,
         `  switchport trunk allowed vlan ${allowedVlans}`,
@@ -97,6 +103,7 @@ window.fttbDevices = {
         `  exit`,
       ],
       trunk_native: ({ portType, port, allowedVlans, nativeVlan, desc }) => [
+        `configure terminal`,
         `interface ${portType} ${port}`,
         `  switchport mode trunk`,
         `  switchport trunk native vlan ${nativeVlan}`,
@@ -134,10 +141,11 @@ window.fttbDevices = {
       "Конфигурация": [
         { command: `show running-config interface {portType} {port}`, description: "Конфигурация порта" },
         { command: `show vlan`, description: "Список VLAN" },
+        { command: `configure terminal\ndefault interface {portType} {port}`, description: "Сброс конфигурации порта." },
       ],
       "MAC-таблица": [
-        { command: `show mac address-table interface {portType} {port}`, description: "MAC-адреса на порту" },
-        { command: `show mac address-table`, description: "Вся MAC-таблица" },
+        { command: `show mac-address-table interface {portType} {port}`, description: "MAC-адреса на порту" },
+        { command: `show mac-address-table`, description: "Вся MAC-таблица" },
       ],
     },
   },
