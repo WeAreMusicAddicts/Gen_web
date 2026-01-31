@@ -1292,6 +1292,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         gponForm?.classList.remove('gpon-sib');
         gponForm?.classList.remove('gpon-ltp');
         gponForm?.classList.remove('gpon-electra');
+        gponForm?.classList.remove('gpon-eltex-hide-desc');
         eltexFields.classList.add('hidden');
         huaweiFields.classList.add('hidden');
         huaweiActions.classList.add('hidden');
@@ -1325,6 +1326,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Ural - show Eltex fields (SN/PLOAM + IMS/vIMS)
             gponForm?.classList.add('gpon-ural');
             if (effectiveDevice === 'eltex_ltp') gponForm?.classList.add('gpon-ltp');
+            if (effectiveDevice === 'eltex_ma4000' || effectiveDevice === 'eltex_ltp') {
+                gponForm?.classList.add('gpon-eltex-hide-desc');
+            }
             eltexFields.classList.remove('hidden');
             gponService.classList.remove('hidden');
             if (gponBranchGroup) gponBranchGroup.classList.remove('hidden');

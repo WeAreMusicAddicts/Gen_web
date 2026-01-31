@@ -938,6 +938,10 @@ label {
     display: none !important;
 }
 
+#gpon-form.gpon-ural.gpon-eltex-hide-desc #gpon-description-field {
+    display: none !important;
+}
+
 #gpon-form.gpon-electra #gpon-auth-fields {
     display: none !important;
 }
