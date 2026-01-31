@@ -592,6 +592,18 @@ label {
     gap: 10px;
 }
 
+.output-subsection {
+    margin-top: 20px;
+}
+
+.output-subheader h4 {
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
 .config-output, .diagnostics-output {
     background-color: #1a2332;
     border: 1px solid var(--border-color);

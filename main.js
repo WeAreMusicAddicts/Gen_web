@@ -13,6 +13,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Элементы интерфейса
     const configOutput = document.getElementById('config-output');
     const diagOutput = document.getElementById('diagnostics-output');
+    const mcastSection = document.getElementById('mcast-output-section');
+    const mcastOutput = document.getElementById('config-output-mcast');
 
     // Проверка загрузки устройств
     function checkDevicesLoaded() {
@@ -115,7 +117,23 @@ document.addEventListener('DOMContentLoaded', async function() {
     function clearConfigOutput() {
         configOutput.textContent = '// Выберите технологию, заполните поля и нажмите "Сгенерировать"';
         diagOutput.innerHTML = '';
+        if (mcastSection) mcastSection.classList.add('hidden');
+        if (mcastOutput) mcastOutput.textContent = '';
     }
+
+    function setConfigOutput(mainText, multicastText, options = {}) {
+        const showMulticast = options.showMulticast === true;
+        configOutput.textContent = mainText || '';
+        if (!mcastSection || !mcastOutput) return;
+        if (showMulticast) {
+            mcastSection.classList.remove('hidden');
+            mcastOutput.textContent = multicastText || '';
+        } else {
+            mcastSection.classList.add('hidden');
+            mcastOutput.textContent = '';
+        }
+    }
+
 
     // Переключение тех
 // нологий
@@ -180,7 +198,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 mcastVlan: '26',
             };
             Object.assign(data, readExtraFields('adsl-sib-extra-fields', extractTemplateTokens(tpl.text || '')));
-            configOutput.textContent = applyTemplate(tpl.text, data).trim();
+            setConfigOutput(applyTemplate(tpl.text, data).trim(), '', { showMulticast: false });
             updateDiagnostics('adsl', device, port, vlan);
             return;
         }
@@ -199,7 +217,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             commands.push(`  no shutdown`);
         }
 
-        configOutput.textContent = commands.join('\n');
+        setConfigOutput(commands.join('\n'), '', { showMulticast: false });
         updateDiagnostics('adsl', device, port, vlan);
     });
 
@@ -354,7 +372,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             commands.push(`! Режим ${mode} не реализован, используйте стандартную настройку`);
         }
 
-        configOutput.textContent = commands.join('\n');
+        setConfigOutput(commands.join('\n'), '', { showMulticast: false });
         updateDiagnostics('fttb', device, { portType, port }, vlan);
     });
 
@@ -393,6 +411,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         const ontIdEltex = isLtpDevice ? `${slot}/${ponPort}` : `${slot}/${ponPort}/${ontIdx || '11'}`;
 
         let commands = [];
+        let multicastCommands = [];
+        let showMulticastBlock = false;
+        let useBlocksOutput = false;
 
         if (device === 'huawei') {
             const pppoeVlan = document.getElementById('gpon-vlan-pppoe').value.trim() || '3501';
@@ -407,7 +428,19 @@ document.addEventListener('DOMContentLoaded', async function() {
             const iptvServicePortIndex = document.getElementById('gpon-iptv-sp-index')?.value.trim();
             const doVoIP = document.getElementById('gpon-action-voip').checked;
 
+            useBlocksOutput = true;
+            showMulticastBlock = doIPTV;
+
             const gponPort = `${frame}/${slot}/${ponPort}`;
+            const addHuaweiMulticast = () => {
+                multicastCommands.push('btv');
+                const igmpIndex = iptvServicePortIndex || '*СЕРВИС ПОРТ (INDEX)*';
+                multicastCommands.push(`igmp user add service-port ${igmpIndex} no-auth max-program 8`);
+                multicastCommands.push(`multicast-vlan ${iptvVlan}`);
+                multicastCommands.push(`igmp multicast-vlan member service-port ${igmpIndex}`);
+                multicastCommands.push('quit');
+                multicastCommands.push('return');
+            };
 
             if (doDelete) {
                 commands.push('! Удаление существующей ONT и сервис-портов');
@@ -451,22 +484,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
                 if (doIPTV) {
                     commands.push(`service-port vlan ${iptvVlan} gpon ${gponPort} ont ${ontIdx} gemport 1 multi-service user-vlan 40 tag-transform translate inbound traffic-table index 7 outbound traffic-table index 7`);
-                    commands.push('');
-                    commands.push('############### ВНИМАНИЕ ###############');
-                    commands.push('# Далее необходимо найти индекс сервис-порта для IPTV:');
                     commands.push(`display service-port port ${gponPort} ont ${ontIdx} gemport 1`);
-                    if (!iptvServicePortIndex) {
-                        commands.push('# Замените *СЕРВИС ПОРТ (INDEX)* в командахниже на найденный индекс (2 места)');
-                    }
-                    commands.push('btv');
-                    const igmpIndex = iptvServicePortIndex || '*СЕРВИС ПОРТ (INDEX)*';
-                    commands.push(`igmp user add service-port ${igmpIndex} no-auth max-program 8`);
-                    commands.push(`multicast-vlan ${iptvVlan}`);
-                    commands.push(`igmp multicast-vlan member service-port ${igmpIndex}`);
-                    commands.push('quit');
+                    addHuaweiMulticast();
+                } else {
+                    commands.push('return');
                 }
-
-                commands.push('return');
             } else {
                 if (doPPPoE) {
                     commands.push('! Только PPPoE');
@@ -485,19 +507,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                     commands.push('undo interactive');
                     commands.push('config');
                     commands.push(`service-port vlan ${iptvVlan} gpon ${gponPort} ont ${ontIdx} gemport 1 multi-service user-vlan 40 tag-transform translate inbound traffic-table index 7 outbound traffic-table index 7`);
-                    commands.push('');
-                    commands.push('############### ВНИМАНИЕ ###############');
                     commands.push(`display service-port port ${gponPort} ont ${ontIdx} gemport 1`);
-                    if (!iptvServicePortIndex) {
-                        commands.push('# Замените *СЕРВИС ПОРТ (INDEX)* в командахниже на найденный индекс (2 места)');
-                    }
-                    commands.push('btv');
-                    const igmpOnlyIndex = iptvServicePortIndex || '*СЕРВИС ПОРТ (INDEX)*';
-                    commands.push(`igmp user add service-port ${igmpOnlyIndex} no-auth max-program 8`);
-                    commands.push(`multicast-vlan ${iptvVlan}`);
-                    commands.push(`igmp multicast-vlan member service-port ${igmpOnlyIndex}`);
-                    commands.push('quit');
-                    commands.push('return');
+                    addHuaweiMulticast();
                 }
                 if (doVoIP) {
                     commands.push('');
@@ -519,6 +530,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             const cVlan = document.getElementById('gpon-electra-cvlan')?.value.trim() || '196';
             const multicastVlan = document.getElementById('gpon-electra-mcast-vlan')?.value.trim() || '26';
             const igmpIndex = document.getElementById('gpon-electra-igmp-index')?.value.trim() || '12';
+
+            useBlocksOutput = true;
+            showMulticastBlock = true;
 
             const selectedElectraAction = document.querySelector('input[name="gpon-electra-action"]:checked')?.value || 'activate';
             const doDelete = selectedElectraAction === 'delete';
@@ -566,19 +580,15 @@ document.addEventListener('DOMContentLoaded', async function() {
                 commands.push(`service-port autoindex vlan ${sVlan} gpon ${frameSlot} port ${ponPort} ont ${ontIdx} gemport 2 multi-service user-vlan 10 tag-action translate-and-add inner-vlan ${cVlan} inner-priority 0`);
                 commands.push(`service-port autoindex vlan ${tr069Vlan} gpon ${frameSlot} port ${ponPort} ont ${ontIdx} gemport 1 multi-service user-vlan 4094 tag-action translate-and-add inner-vlan 4094 inner-priority 0`);
                 commands.push(`igmp user add user-index autoindex pon ${gponPortElectra} ont ${ontIdx} no-auth max-program 32`);
-                commands.push('');
-                commands.push('! ===== ВНИМАНИЕ =====');
-                commands.push('! Заполните поле IGMP member user-index перед продолжением настройки');
                 commands.push(`show current-config include pon ${gponPortElectra} ont ${ontIdx} no-auth max-program 32`);
-                commands.push('! ====================');
-                commands.push(`multicast-vlan ${multicastVlan}`);
-                commands.push(`igmp member user-index ${igmpIndex}`);
-                commands.push('exit');
-                commands.push('exit');
-                commands.push('save');
+                multicastCommands.push(`multicast-vlan ${multicastVlan}`);
+                multicastCommands.push(`igmp member user-index ${igmpIndex}`);
+                multicastCommands.push('exit');
+                multicastCommands.push('exit');
+                multicastCommands.push('save');
                 if (electraMac) {
-                    commands.push('');
-                    commands.push(`! MAC ONT: ${electraMac}`);
+                    multicastCommands.push('');
+                    multicastCommands.push(`! MAC ONT: ${electraMac}`);
                 }
             }
         } else if (!isSibBranch && (device === 'eltex_ma4000' || device === 'eltex_ltp')) {
@@ -612,7 +622,11 @@ document.addEventListener('DOMContentLoaded', async function() {
             commands.push(`! Устройство ${device} не найдено.`);
         }
 
-        configOutput.textContent = commands.join('\n');
+        if (useBlocksOutput) {
+            setConfigOutput(commands.join('\n'), multicastCommands.join('\n'), { showMulticast: showMulticastBlock });
+        } else {
+            setConfigOutput(commands.join('\n'), '', { showMulticast: false });
+        }
         updateDiagnostics('gpon', device, device === 'huawei' ? ontIdHuawei : ontIdEltex);
     });
 
@@ -1329,7 +1343,13 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Копирование конфига в буфер обмена
     document.getElementById('copy-all').addEventListener('click', () => {
-        const text = configOutput.textContent;
+        let text = configOutput.textContent || '';
+        if (mcastSection && !mcastSection.classList.contains('hidden')) {
+            const mcastText = mcastOutput?.textContent || '';
+            if (mcastText.trim()) {
+                text = `${text.trimEnd()}\n\n! ===== МУЛЬТИКАСТ =====\n${mcastText}`;
+            }
+        }
         navigator.clipboard.writeText(text).then(() => {
             showNotification('Конфиг скопирован в буфер обмена!');
         }).catch(() => {
@@ -1355,7 +1375,13 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Копирование для GPON
     document.getElementById('copy-gpon').addEventListener('click', () => {
-        const text = configOutput.textContent;
+        let text = configOutput.textContent || '';
+        if (mcastSection && !mcastSection.classList.contains('hidden')) {
+            const mcastText = mcastOutput?.textContent || '';
+            if (mcastText.trim()) {
+                text = `${text.trimEnd()}\n\n! ===== МУЛЬТИКАСТ =====\n${mcastText}`;
+            }
+        }
         navigator.clipboard.writeText(text).then(() => {
             showNotification('Конфиг GPON скопирован!');
         });
@@ -1370,7 +1396,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         document.getElementById('adsl-vlan').value = '101';
         const adslMcastVlan = document.getElementById('adsl-mcast-vlan');
         if (adslMcastVlan) adslMcastVlan.value = '';
-        configOutput.textContent = '// Выберите технологию, заполните поля и нажмите "Сгенерировать"';
+        clearConfigOutput();
         updateDiagnostics('adsl', 'alcatel_7330', '0/1', '101');
     });
 
@@ -1382,7 +1408,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         document.getElementById('fttb-port').value = '1/0/1';
         document.getElementById('fttb-description').value = '';
         document.getElementById('fttb-mode').dispatchEvent(new Event('change'));
-        configOutput.textContent = '// Выберите технологию, заполните поля и нажмите "Сгенерировать"';
+        clearConfigOutput();
         updateDiagnostics('fttb', 'eltex_2428', { portType: 'gigabitethernet', port: '1/0/1' }, '100');
     });
 
@@ -1428,14 +1454,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         setDefaultGponOnt('huawei');
         updateGponFields();
 
-        configOutput.textContent = '// \u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u0442\u0435\u0445\u043d\u043e\u043b\u043e\u0433\u0438\u044e, \u0437\u0430\u043f\u043e\u043b\u043d\u0438\u0442\u0435 \u043f\u043e\u043b\u044f \u0438 \u043d\u0430\u0436\u043c\u0438\u0442\u0435 "\u0421\u0433\u0435\u043d\u0435\u0440\u0438\u0440\u043e\u0432\u0430\u0442\u044c"';
+        clearConfigOutput();
         updateDiagnostics('gpon', 'huawei', '1/1/1');
     });
 
     // Очистка вывода
     document.getElementById('clear-output').addEventListener('click', () => {
-        configOutput.textContent = '// Выберите технологию, заполните поля и нажмите "Сгенерировать"';
-        diagOutput.innerHTML = '';
+        clearConfigOutput();
     });
 
     // Вспомогательные функции

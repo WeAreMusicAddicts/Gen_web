@@ -368,6 +368,14 @@ vdsl2 snrmargin-prf SNR12`, description: "Смена профиля SNR" },
         { command: `show vlan member`, description: "Просмотр членов VLAN" },
         { command: `show vlan member vid {vlan}`, description: "Просмотр членов конкретного VLAN" },
       ],
+      "Удаление IPTV": [
+        {
+          command: `del vlan member interface dsl{portNum}:{vpi}_{vci} vid {vlan}\n` +
+            `del bridge ccx between dsl{portNum}:{vpi}_{vci} fasteth1\n` +
+            `del interface dsl{portNum}:{vpi}_{vci}`,
+          description: "Удаление IPTV на порту",
+        },
+      ],
       "Работа с MAC": [
         { command: `show bridge mactable`, description: "Просмотр MAC-таблицы" },
         { command: `show bridge mactable interface dsl{portNum}:{vpi}_{vci}`, description: "MAC-таблица интерфейса" },
