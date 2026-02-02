@@ -60,6 +60,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         alsitek_fttb: 'e1',
         edgecore_es3528_m: '1/1',
         dlink_des3200: '1',
+        qtech: '1/0/3',
         huawei_switch: '0/0/1',
         huawei_3328: '0/0/1',
         si3000: '1/1',
@@ -977,6 +978,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         const portTypeGroup = document.getElementById('fttb-port-type-group');
         const modeGroup = document.getElementById('fttb-mode-group');
         const vlanFields = document.getElementById('fttb-vlan-fields');
+        const modeSelect = document.getElementById('fttb-mode');
         const branchGroup = document.getElementById('fttb-sib-branch-group');
         const equipmentGroup = document.getElementById('fttb-sib-equipment-group');
         const variantGroup = document.getElementById('fttb-sib-variant-group');
@@ -1003,6 +1005,15 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
         if (defaultPorts[this.value]) {
             portInput.value = defaultPorts[this.value];
+        }
+        if (modeSelect) {
+            const dot1vOption = modeSelect.querySelector('option[value="dot1v"]');
+            const supportsDot1v = !!devices?.fttb?.[this.value]?.modes?.dot1v;
+            if (dot1vOption) dot1vOption.disabled = !supportsDot1v;
+            if (!supportsDot1v && modeSelect.value === 'dot1v') {
+                modeSelect.value = 'access';
+            }
+            modeSelect.dispatchEvent(new Event('change'));
         }
         // Очищаем конфиг при смене оборудования
         clearConfigOutput();
@@ -2391,6 +2402,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     const fttbBranchGroup = document.getElementById('fttb-sib-branch-group');
     const fttbEquipmentGroup = document.getElementById('fttb-sib-equipment-group');
     const fttbVariantGroup = document.getElementById('fttb-sib-variant-group');
+    const fttbModeSelect = document.getElementById('fttb-mode');
     if (fttbDeviceInit?.value === 'sib_templates') {
         fttbModeGroup?.classList.add('hidden');
         fttbVlanFields?.classList.add('hidden');
@@ -2398,6 +2410,15 @@ document.addEventListener('DOMContentLoaded', async function() {
         fttbEquipmentGroup?.classList.remove('hidden');
         fttbVariantGroup?.classList.remove('hidden');
         document.getElementById('fttb-sib-branch')?.dispatchEvent(new Event('change'));
+    }
+    if (fttbDeviceInit && fttbModeSelect) {
+        const dot1vOption = fttbModeSelect.querySelector('option[value="dot1v"]');
+        const supportsDot1v = !!devices?.fttb?.[fttbDeviceInit.value]?.modes?.dot1v;
+        if (dot1vOption) dot1vOption.disabled = !supportsDot1v;
+        if (!supportsDot1v && fttbModeSelect.value === 'dot1v') {
+            fttbModeSelect.value = 'access';
+        }
+        fttbModeSelect.dispatchEvent(new Event('change'));
     }
     
     // Инициализация видимости полей GPON (Huawei по умолчанию)

@@ -538,6 +538,75 @@ config ports {port} state enable`, description: "Перезапуск порта
     },
   },
 
+  qtech: {
+    label: "Qtech",
+    modes: {
+      access: ({ portType, port, accessVlan, desc }) => [
+        `interface Ethernet${port}`,
+        `description ${desc}`,
+        `storm-control broadcast kbps 960`,
+        `storm-control unicast kbps 960`,
+        `mls qos queue algorithm sp`,
+        `switchport mode access`,
+        `switchport access vlan ${accessVlan}`,
+        `switchport forbidden vlan 1`,
+        `pppoe intermediate-agent`,
+        `igmp snooping drop query`,
+      ],
+      trunk: ({ portType, port, allowedVlans, desc }) => [
+        `interface Ethernet${port}`,
+        `description ${desc}`,
+        `storm-control broadcast kbps 960`,
+        `storm-control unicast kbps 960`,
+        `mls qos queue algorithm sp`,
+        `switchport mode trunk`,
+        `switchport trunk allowed vlan ${allowedVlans}`,
+        `switchport forbidden vlan 1`,
+        `pppoe intermediate-agent`,
+        `igmp snooping drop query`,
+      ],
+      trunk_native: ({ portType, port, allowedVlans, nativeVlan, desc }) => [
+        `interface Ethernet${port}`,
+        `description ${desc}`,
+        `storm-control broadcast kbps 960`,
+        `storm-control unicast kbps 960`,
+        `mls qos queue algorithm sp`,
+        `switchport mode hybrid`,
+        `switchport hybrid allowed vlan ${allowedVlans} tag`,
+        `switchport hybrid allowed vlan ${nativeVlan} untag`,
+        `switchport hybrid native vlan ${nativeVlan}`,
+        `switchport forbidden vlan 1`,
+        `pppoe intermediate-agent`,
+        `igmp snooping drop query`,
+      ],
+    },
+    diagnostics: {
+      "Порты": [
+        { command: `show interface ethernet {port}`, description: "Просмотр состояния порта" },
+        { command: `show interface ethernet status`, description: "Просмотр всех портов" },
+        { command: `show switchport interface ethernet {port}`, description: "Просмотр режима порта" },
+        { command: `show running-config interface ethernet {port}`, description: "Просмотр конфигурации порта" },
+      ],
+      "MAC-таблица": [
+        { command: `show mac-address-table interface ethernet {port}`, description: "Просмотр MAC-адресов на порту" },
+        { command: `show mac-address-table`, description: "Просмотр таблицы MAC-адресов" },
+      ],
+      "Кабель": [
+        { command: `virtual-cable-test interface ethernet {port}`, description: "Кабель-тест порта" },
+      ],
+      "Логи": [
+        { command: `show logging buffered level warnings | include {port}`, description: "Просмотр падений порта" },
+      ],
+      "Трафик": [
+        { command: `show interface ethernet counter rate`, description: "Просмотр входящего/исходящего трафика по портам" },
+        { command: `show interface ethernet counter rate | include {port}`, description: "Просмотр входящего/исходящего трафика на порту" },
+      ],
+      "Интерфейсы": [
+        { command: `show ip interface brief`, description: "Просмотр состояния виртуальных интерфейсов" },
+      ],
+    },
+  },
+
   huawei_switch: {
     label: "Huawei (?????)",
     modes: {
