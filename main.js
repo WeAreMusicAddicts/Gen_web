@@ -66,6 +66,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         si3000: '1/1',
         snr: '1/1',
         zyxel_fttb: '1/1',
+        zyxel_aam1008: '1',
         // Сибирские филиалы - все используют 4/2/11
         eltex_ma4000_af_csm: '4/2/11',
         eltex_ma4000_af_esm: '4/2/11',
@@ -859,7 +860,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 let dataCommand = escapeHtml(finalCommand);
 
                 // Устройства с выбором профиля
-                const devicesWithProfile = ['alcatel_7330', 'zyxel_5000', 'zyxel_1000', 'alcatel_7324'];
+                const devicesWithProfile = ['alcatel_7330', 'zyxel_5000', 'zyxel_1000', 'zyxel_aam1008', 'alcatel_7324'];
 
                 // Добавляем выпадающий список профилей для устройств с {serviceProfile}
                 if (command.includes('{serviceProfile}') && devicesWithProfile.includes(device)) {

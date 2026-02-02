@@ -596,6 +596,44 @@ vdsl2 snrmargin-prf SNR12`, description: "Смена профиля SNR" },
     },
   },
 
+  zyxel_aam1008: {
+    label: "Zyxel-AAM1008",
+    services: {
+      pppoe: ({ port, vpi, vci }) => [
+        `adsl`,
+        `set ch ${port} ${vpi} ${vci} 0 0 DEFVAL`,
+        `home`,
+        `config save`,
+      ],
+      iptv: () => [
+        `! IPTV не поддерживается`,
+      ],
+    },
+    diagnostics: {
+      "Смена профиля": [
+        { command: `adsl set port {port} {serviceProfile} auto`, description: "Смена профиля" },
+      ],
+      "Состояние портов": [
+        { command: `adsl show ports`, description: "Просмотр состояния всех портов" },
+      ],
+      "Состояние порта": [
+        { command: `adsl show port {port}`, description: "Просмотр состояния порта" },
+      ],
+      "VPI/VCI": [
+        { command: `adsl show pvc {port}`, description: "Просмотр информации о VPI/VCI на порту" },
+      ],
+      "Вторичные параметры": [
+        { command: `adsl linerate {port}`, description: "Просмотр вторичных параметров на порту" },
+      ],
+      "Профили": [
+        { command: `adsl show profiles`, description: "Просмотр всех профилей" },
+      ],
+      "VLAN": [
+        { command: `bridge fpvid`, description: "Просмотр VLAN на всех портах" },
+      ],
+    },
+  },
+
   genew_photel_px90: {
     label: "Genew iAN B1205VE / Photel PX-90V 008",
     services: {
