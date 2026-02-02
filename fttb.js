@@ -596,6 +596,7 @@ config ports {port} state enable`, description: "Перезапуск порта
       ],
       "Логи": [
         { command: `show logging buffered level warnings | include {port}`, description: "Просмотр падений порта" },
+        { command: `show logging buffered`, description: "Просмотр логов" },
       ],
       "Трафик": [
         { command: `show interface ethernet counter rate`, description: "Просмотр входящего/исходящего трафика по портам" },
