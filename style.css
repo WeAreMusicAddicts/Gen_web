@@ -853,11 +853,25 @@ label {
 }
 
 .gpon-checkbox-inputlike {
-    height: 44px;
-    min-height: 44px;
-    padding: 0 14px;
+    height: 42px;
+    min-height: 42px;
+    padding: 0 15px;
     align-items: center;
+    justify-content: flex-start;
+    gap: 10px;
     box-sizing: border-box;
+}
+
+.gpon-checkbox-inputlike .checkbox-title {
+    font-size: 0.95rem;
+    line-height: 1;
+}
+
+.gpon-checkbox-inputlike .checkbox-mark {
+    width: 16px;
+    height: 16px;
+    min-width: 16px;
+    border-radius: 4px;
 }
 
 .vpn-vlan-input-sm {
