@@ -800,7 +800,7 @@ label {
 /* GPON VLAN поля - компактные */
 .gpon-vlan-grid {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(6, 1fr);
     gap: 10px;
     padding: 4px 0;
 }
@@ -809,10 +809,16 @@ label {
     min-width: 0;
 }
 
+
 .form-input-sm {
     padding: 8px 12px;
     font-size: 0.9rem;
     text-align: center;
+}
+
+.igmp-input-sm {
+    max-width: 320px;
+    width: 100%;
 }
 
 /* GPON действия - компактные чекбоксы */
@@ -844,6 +850,19 @@ label {
 .gpon-checkbox-sm {
     padding: 8px 12px;
     justify-content: center;
+}
+
+.gpon-checkbox-inputlike {
+    height: 44px;
+    min-height: 44px;
+    padding: 0 14px;
+    align-items: center;
+    box-sizing: border-box;
+}
+
+.vpn-vlan-input-sm {
+    max-width: 220px;
+    width: 100%;
 }
 
 .gpon-checkbox input[type="checkbox"],

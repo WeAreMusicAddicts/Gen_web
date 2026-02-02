@@ -402,6 +402,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         const gponDescription = document.getElementById('gpon-description').value.trim();
         const cvid = document.getElementById('gpon-cvid')?.value.trim() || '107';
         const svid = document.getElementById('gpon-svid')?.value.trim() || '1647';
+        const eltexVpnEnabled = document.getElementById('gpon-eltex-vpn')?.checked;
+        const eltexVpnVlan = document.getElementById('gpon-eltex-vpn-vlan')?.value.trim();
 
         const isLtpDevice = device === 'eltex_ltp' || device.startsWith('eltex_ltp_');
         const ontParts = ontField.split('/');
@@ -426,6 +428,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             const doPPPoE = document.getElementById('gpon-action-pppoe').checked;
             const doIPTV = document.getElementById('gpon-action-iptv').checked;
             const iptvServicePortIndex = document.getElementById('gpon-iptv-sp-index')?.value.trim();
+            const igmpMemberUserIndex = document.getElementById('gpon-iptv-igmp-index')?.value.trim();
             const doVoIP = document.getElementById('gpon-action-voip').checked;
 
             useBlocksOutput = true;
@@ -434,7 +437,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             const gponPort = `${frame}/${slot}/${ponPort}`;
             const addHuaweiMulticast = () => {
                 multicastCommands.push('btv');
-                const igmpIndex = iptvServicePortIndex || '*СЕРВИС ПОРТ (INDEX)*';
+                const igmpIndex = igmpMemberUserIndex || iptvServicePortIndex || '*СЕРВИС ПОРТ (INDEX)*';
                 multicastCommands.push(`igmp user add service-port ${igmpIndex} no-auth max-program 8`);
                 multicastCommands.push(`multicast-vlan ${iptvVlan}`);
                 multicastCommands.push(`igmp multicast-vlan member service-port ${igmpIndex}`);
@@ -574,7 +577,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (doActivate) {
                 commands.push('config');
                 commands.push(`interface gpon ${frameSlot}`);
-                commands.push(`ont add ${ponPort} ${ontIdx} sn-auth ${serial} ont-lineprofile-id 10 ont-srvprofile-id 10`);
+                commands.push(`ont add ${ponPort} ${ontIdx} sn-auth ${serial} ont-lineprofile-name CSM ont-srvprofile-name CSM`);
                 commands.push(`ont description ${ponPort} ${ontIdx} ${description}`);
                 commands.push(`ont tr069-profile ${ponPort} ${ontIdx} ont-tr069profile-id 3`);
                 commands.push(`service-port autoindex vlan ${sVlan} gpon ${frameSlot} port ${ponPort} ont ${ontIdx} gemport 2 multi-service user-vlan 10 tag-action translate-and-add inner-vlan ${cVlan} inner-priority 0`);
@@ -599,6 +602,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                         ontId: ontIdEltex,
                         sn: sn || '5452535225153E7C',
                         ploam,
+                        vpnEnabled: !!eltexVpnEnabled,
+                        vpnVlan: eltexVpnVlan,
                     })
                 );
             } else {
@@ -821,6 +826,15 @@ document.addEventListener('DOMContentLoaded', async function() {
                     out = out.replace(/{mac}/g, mac);
                     out = out.replace(/{sn}/g, sn);
                     out = out.replace(/{svlan}/g, svlan);
+                }
+                if (portInfo) {
+                    const parts = String(portInfo).split('/').filter(Boolean);
+                    const slot = parts[0] || '';
+                    const ponPort = parts[1] || '';
+                    const ontIdx = parts[2] || '';
+                    out = out.replace(/{slot}/g, slot);
+                    out = out.replace(/{ponPort}/g, ponPort);
+                    out = out.replace(/{ontIdx}/g, ontIdx);
                 }
                 out = out.replace(/{port}/g, portInfo || '{port}').replace(/{ontId}/g, portInfo || '{ontId}');
             } else {
@@ -1219,6 +1233,16 @@ document.addEventListener('DOMContentLoaded', async function() {
         updateDiagnostics('gpon', effectiveDevice, ontInput.value);
     });
 
+    const eltexVpnCheckbox = document.getElementById('gpon-eltex-vpn');
+    const eltexVpnVlanField = document.getElementById('gpon-eltex-vpn-vlan-field');
+    if (eltexVpnCheckbox && eltexVpnVlanField) {
+        const toggleEltexVpnField = () => {
+            eltexVpnVlanField.classList.toggle('hidden', !eltexVpnCheckbox.checked);
+        };
+        eltexVpnCheckbox.addEventListener('change', toggleEltexVpnField);
+        toggleEltexVpnField();
+    }
+
     // Обработчик выбора филиала
     document.getElementById('gpon-branch').addEventListener('change', function() {
         const gponDeviceSelect = document.getElementById('gpon-device');
@@ -1273,7 +1297,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     function updateGponFields() {
         const gponForm = document.getElementById('gpon-form');
         const eltexFields = document.getElementById('gpon-eltex-fields');
+        const eltexVpnRow = document.getElementById('gpon-eltex-vpn-row');
+        const eltexVpnVlanField = document.getElementById('gpon-eltex-vpn-vlan-field');
+        const eltexVpnCheckbox = document.getElementById('gpon-eltex-vpn');
         const huaweiFields = document.getElementById('gpon-huawei-fields');
+        const huaweiIgmp = document.getElementById('gpon-huawei-igmp');
         const huaweiActions = document.getElementById('gpon-huawei-actions');
         const electraFields = document.getElementById('gpon-electra-fields');
         const electraActions = document.getElementById('gpon-electra-actions');
@@ -1294,7 +1322,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         gponForm?.classList.remove('gpon-electra');
         gponForm?.classList.remove('gpon-eltex-hide-desc');
         eltexFields.classList.add('hidden');
+        if (eltexVpnRow) eltexVpnRow.classList.add('hidden');
+        if (eltexVpnVlanField) eltexVpnVlanField.classList.add('hidden');
         huaweiFields.classList.add('hidden');
+        huaweiIgmp.classList.add('hidden');
         huaweiActions.classList.add('hidden');
         electraFields.classList.add('hidden');
         electraActions.classList.add('hidden');
@@ -1306,6 +1337,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (effectiveDevice === 'huawei') {
             // Huawei - show Huawei fields
             huaweiFields.classList.remove('hidden');
+            huaweiIgmp.classList.remove('hidden');
             huaweiActions.classList.remove('hidden');
             if (gponBranchGroup) gponBranchGroup.classList.remove('hidden');
             return;
@@ -1330,6 +1362,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                 gponForm?.classList.add('gpon-eltex-hide-desc');
             }
             eltexFields.classList.remove('hidden');
+            if (eltexVpnRow && (effectiveDevice === 'eltex_ma4000' || effectiveDevice === 'eltex_ltp')) {
+                eltexVpnRow.classList.remove('hidden');
+                if (eltexVpnCheckbox?.checked) eltexVpnVlanField?.classList.remove('hidden');
+            }
             gponService.classList.remove('hidden');
             if (gponBranchGroup) gponBranchGroup.classList.remove('hidden');
             return;
@@ -1426,9 +1462,17 @@ document.addEventListener('DOMContentLoaded', async function() {
         document.getElementById('gpon-ploam').value = '';
         const iptvSpIndex = document.getElementById('gpon-iptv-sp-index');
         if (iptvSpIndex) iptvSpIndex.value = '';
+        const igmpUserIndex = document.getElementById('gpon-iptv-igmp-index');
+        if (igmpUserIndex) igmpUserIndex.value = '';
         document.getElementById('gpon-description').value = '';
         document.getElementById('gpon-cvid').value = '107';
         document.getElementById('gpon-svid').value = '1647';
+        const eltexVpnCheckbox = document.getElementById('gpon-eltex-vpn');
+        const eltexVpnVlan = document.getElementById('gpon-eltex-vpn-vlan');
+        const eltexVpnVlanField = document.getElementById('gpon-eltex-vpn-vlan-field');
+        if (eltexVpnCheckbox) eltexVpnCheckbox.checked = false;
+        if (eltexVpnVlan) eltexVpnVlan.value = '';
+        if (eltexVpnVlanField) eltexVpnVlanField.classList.add('hidden');
         const electraSnField = document.getElementById('gpon-electra-sn');
         const electraDescField = document.getElementById('gpon-electra-description');
         const electraMacField = document.getElementById('gpon-electra-mac');

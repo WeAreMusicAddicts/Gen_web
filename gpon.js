@@ -91,7 +91,7 @@ window.gponDevices = {
   eltex_ma4000: {
     label: "Eltex MA4000",
     services: {
-      ims: ({ ontId, sn, ploam }) => [
+      ims: ({ ontId, sn, ploam, vpnEnabled, vpnVlan }) => [
         `configure terminal`,
         `interface ont ${ontId}`,
         `description "ONT-${ontId}"`,
@@ -101,11 +101,13 @@ window.gponDevices = {
         `service 4 profile dba "dba-00"`,
         `profile ports "ports-01"`,
         `template "template-01"`,
+        vpnEnabled ? `service 5 custom` : null,
+        vpnEnabled ? `service 5 custom cvid ${vpnVlan || '<VLAN>'}` : null,
         `exit`,
         `do commit`,
         `do confirm`,
       ].filter(Boolean),
-      vims: ({ ontId, sn, ploam }) => [
+      vims: ({ ontId, sn, ploam, vpnEnabled, vpnVlan }) => [
         `configure terminal`,
         `interface ont ${ontId}`,
         `description "ONT-${ontId}"`,
@@ -115,6 +117,8 @@ window.gponDevices = {
         `service 4 profile dba "dba-00"`,
         `profile ports "ports-01"`,
         `template "template-02"`,
+        vpnEnabled ? `service 5 custom` : null,
+        vpnEnabled ? `service 5 custom cvid ${vpnVlan || '<VLAN>'}` : null,
         `exit`,
         `do commit`,
         `do confirm`,
@@ -126,6 +130,8 @@ window.gponDevices = {
       ],
       "Оптика": [
         { command: `show ont optical-info {ontId}`, description: "Оптические параметры" },
+        { command: `show interface ont {ontId} rssi`, description: "Затухание со стороны ONT (RSSI)" },
+        { command: `show interface ont {ontId} laser`, description: "Лазер/сигнал в сторону ONT" },
       ],
       "Конфигурация": [
         { command: `show running-config interface ont {ontId}`, description: "Конфигурация ONT" },
@@ -138,8 +144,18 @@ window.gponDevices = {
         { command: `show interface ont {ontId} connections`, description: "Причины разрывов/соединения" },
         { command: `show interface ont {ontId} laser`, description: "Оптический сигнал ONT" },
       ],
+      "Сброс ONT": [
+        { command: `send omci reset interface ont {ontId}`, description: "Сброс ONT" },
+      ],
       "MAC-таблица": [
         { command: `show mac interface ont {ontId}`, description: "MAC-адреса на ONT" },
+        { command: `show mac all include vlan {vlan}`, description: "MAC-адреса по VLAN (сверху)" },
+      ],
+      "DHCP": [
+        { command: `show interface gpon-port {slot} dhcp sessions`, description: "Просмотр IP-адресов (DHCP sessions)" },
+      ],
+      "VLAN": [
+        { command: `show vlan 1-4000`, description: "Просмотр VLAN" },
       ],
       "Профили": [
         { command: `show profile cross-connect`, description: "Список профилей cross-connect" },
@@ -154,7 +170,7 @@ window.gponDevices = {
   eltex_ltp: {
     label: "Eltex LTP",
     services: {
-      ims: ({ ontId, sn, ploam }) => {
+      ims: ({ ontId, sn, ploam, vpnEnabled, vpnVlan }) => {
         const [slot = '1', port = '1'] = (ontId || '1/1').split('/');
         const desc = `ONT-0-${slot}-${port}`;
         return [
@@ -164,12 +180,14 @@ window.gponDevices = {
           sn ? `serial "${sn}"` : `! serial <SN>`,
           ploam ? `password "${ploam}"` : `! password <PLOAM>`,
           `service 4 template "template-01"`,
+          vpnEnabled ? `service 5 custom` : null,
+          vpnEnabled ? `service 5 custom cvid ${vpnVlan || '<VLAN>'}` : null,
           `enable`,
           `exit`,
           `do commit`,
         ].filter(Boolean);
       },
-      vims: ({ ontId, sn, ploam }) => {
+      vims: ({ ontId, sn, ploam, vpnEnabled, vpnVlan }) => {
         const [slot = '1', port = '1'] = (ontId || '1/1').split('/');
         const desc = `ONT-0-${slot}-${port}`;
         return [
@@ -179,6 +197,8 @@ window.gponDevices = {
           sn ? `serial "${sn}"` : `! serial <SN>`,
           ploam ? `password "${ploam}"` : `! password <PLOAM>`,
           `service 4 template "template-02"`,
+          vpnEnabled ? `service 5 custom` : null,
+          vpnEnabled ? `service 5 custom cvid ${vpnVlan || '<VLAN>'}` : null,
           `enable`,
           `exit`,
           `do commit`,

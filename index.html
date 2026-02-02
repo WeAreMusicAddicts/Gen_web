@@ -371,6 +371,10 @@
                             </div>
                         </div>
                     </div>
+                    <div class="form-group-full hidden" id="gpon-huawei-igmp">
+                        <label><i class="fas fa-users"></i> IGMP member user-index</label>
+                        <input type="number" id="gpon-iptv-igmp-index" class="form-input igmp-input-sm" placeholder="например: 12">
+                    </div>
                     <div class="form-group-full hidden" id="gpon-huawei-actions">
                         <label><i class="fas fa-tasks"></i> Действия</label>
                         <div class="gpon-actions-grid">
@@ -413,23 +417,38 @@
                     </div>
                     <div class="form-group-full hidden" id="gpon-eltex-fields">
                         <label><i class="fas fa-sliders-h"></i> Eltex GPON</label>
-                        <div class="vlan-input-group vlan-input-group-row">
-                            <div class="vlan-field" id="gpon-service-field">
-                                <label for="gpon-service">Услуга</label>
-                                <select id="gpon-service" class="form-select">
-                                    <option value="ims">IMS</option>
-                                    <option value="vims">vIMS</option>
-                                </select>
-                            </div>
-                            <!-- Поля для CSM конфигураций -->
-                            <div class="hidden" id="gpon-csm-fields">
-                                <div class="vlan-field">
-                                    <label for="gpon-cvid">CVID (внутр.)</label>
-                                    <input type="number" id="gpon-cvid" class="form-input" placeholder="например: 107" value="107">
+                        <div class="vlan-input-group">
+                            <div class="vlan-input-group-row">
+                                <div class="vlan-field" id="gpon-service-field">
+                                    <label for="gpon-service">Услуга</label>
+                                    <select id="gpon-service" class="form-select">
+                                        <option value="ims">IMS</option>
+                                        <option value="vims">vIMS</option>
+                                    </select>
                                 </div>
-                                <div class="vlan-field">
-                                    <label for="gpon-svid">SVID (внешн.)</label>
-                                    <input type="number" id="gpon-svid" class="form-input" placeholder="например: 1647" value="1647">
+                                <div class="vlan-field hidden" id="gpon-eltex-vpn-row">
+                                    <label class="gpon-checkbox gpon-checkbox-sm gpon-checkbox-inputlike">
+                                        <input type="checkbox" id="gpon-eltex-vpn">
+                                        <span class="checkbox-mark"></span>
+                                        <span class="checkbox-text">
+                                            <span class="checkbox-title">VPN</span>
+                                        </span>
+                                    </label>
+                                </div>
+                                <div class="vlan-field hidden" id="gpon-eltex-vpn-vlan-field">
+                                    <label for="gpon-eltex-vpn-vlan">VPN VLAN</label>
+                                    <input type="number" id="gpon-eltex-vpn-vlan" class="form-input vpn-vlan-input-sm" placeholder="например: 1234">
+                                </div>
+                                <!-- Поля для CSM конфигураций -->
+                                <div class="hidden" id="gpon-csm-fields">
+                                    <div class="vlan-field">
+                                        <label for="gpon-cvid">CVID (внутр.)</label>
+                                        <input type="number" id="gpon-cvid" class="form-input" placeholder="например: 107" value="107">
+                                    </div>
+                                    <div class="vlan-field">
+                                        <label for="gpon-svid">SVID (внешн.)</label>
+                                        <input type="number" id="gpon-svid" class="form-input" placeholder="например: 1647" value="1647">
+                                    </div>
                                 </div>
                             </div>
                         </div>
