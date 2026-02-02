@@ -459,18 +459,21 @@ window.fttbDevices = {
     label: "D-Link",
     modes: {
       access: ({ portType, port, accessVlan, desc }) => [
+        `enable admin`,
         `config ports ${port} description ${desc}`,
         `config vlan vlanid ${accessVlan} add untagged ${port}`,
         `config ports ${port} state enable`,
         `save all`,
       ],
       trunk: ({ portType, port, allowedVlans, desc }) => [
+        `enable admin`,
         `config ports ${port} description ${desc}`,
         `config vlan vlanid ${allowedVlans} add tagged ${port}`,
         `config ports ${port} state enable`,
         `save all`,
       ],
       trunk_native: ({ portType, port, allowedVlans, nativeVlan, desc }) => [
+        `enable admin`,
         `config ports ${port} description ${desc}`,
         `config vlan vlanid ${nativeVlan} add untagged ${port}`,
         `config vlan vlanid ${allowedVlans} add tagged ${port}`,
@@ -478,6 +481,7 @@ window.fttbDevices = {
         `save all`,
       ],
       dot1v: ({ portType, port, tr069Vlan, pppoeVlan, taggedVlan, desc }) => [
+        `enable admin`,
         `config ports ${port} description "${desc}"`,
         `config vlan ${tr069Vlan} add untagged ${port}`,
         `config vlan ${pppoeVlan} add untagged ${port}`,
