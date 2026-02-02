@@ -610,23 +610,17 @@ vdsl2 snrmargin-prf SNR12`, description: "Смена профиля SNR" },
       ],
     },
     diagnostics: {
+      "Работа с портом": [
+        { command: `adsl show ports`, description: "Состояние портов" },
+        { command: `adsl show port {port}`, description: "Состояние порта" },
+        { command: `adsl linerate {port}`, description: "Вторичные параметры" },
+      ],
       "Смена профиля": [
+        { command: `adsl show profiles`, description: "Просмотр всех профилей" },
         { command: `adsl set port {port} {serviceProfile} auto`, description: "Смена профиля" },
-      ],
-      "Состояние портов": [
-        { command: `adsl show ports`, description: "Просмотр состояния всех портов" },
-      ],
-      "Состояние порта": [
-        { command: `adsl show port {port}`, description: "Просмотр состояния порта" },
       ],
       "VPI/VCI": [
         { command: `adsl show pvc {port}`, description: "Просмотр информации о VPI/VCI на порту" },
-      ],
-      "Вторичные параметры": [
-        { command: `adsl linerate {port}`, description: "Просмотр вторичных параметров на порту" },
-      ],
-      "Профили": [
-        { command: `adsl show profiles`, description: "Просмотр всех профилей" },
       ],
       "VLAN": [
         { command: `bridge fpvid`, description: "Просмотр VLAN на всех портах" },
