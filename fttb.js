@@ -511,6 +511,7 @@ window.fttbDevices = {
         { command: `show ports {port} configuration vlan`, description: "VLAN-конфигурация порта" },
         { command: `show vlan ports {port}`, description: "VLAN на порту" },
         { command: `show port dot1v ports {port}`, description: "Dot1v на порту" },
+        { command: `config ports {port} speed {portSpeed}`, description: "Изменение скорости порта" },
       ],
       "Диагностика кабеля": [
         { command: `cable_diag ports {port}`, description: "Диагностика кабеля (cable_diag)" },

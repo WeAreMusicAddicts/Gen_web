@@ -857,7 +857,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 let finalCommand = replacePlaceholders(command);
                 let profileSelectHtml = '';
                 let modulationSelectHtml = '';
+                let portSpeedSelectHtml = '';
                 let dataCommand = escapeHtml(finalCommand);
+                let dataOriginal = escapeHtml(command);
 
                 // Устройства с выбором профиля
                 const devicesWithProfile = ['alcatel_7330', 'zyxel_5000', 'zyxel_1000', 'zyxel_aam1008', 'alcatel_7324'];
@@ -896,13 +898,31 @@ document.addEventListener('DOMContentLoaded', async function() {
                         .replace(/{serviceProfile}/g, serviceProfile);
                     description += ' (spectrum-profile: ' + spectrumProfile + ', service-profile: ' + serviceProfile + ')';
                 }
+
+                if (command.includes('{portSpeed}')) {
+                    portSpeedSelectHtml = `
+                        <select class="diag-profile-select diag-port-speed-select" onchange="updateDiagPortSpeedCommand(this)">
+                            <option value="auto" selected>auto</option>
+                            <option value="1000_full">1000_full</option>
+                            <option value="100_full">100_full</option>
+                            <option value="100_half">100_half</option>
+                            <option value="10_full">10_full</option>
+                            <option value="10_half">10_half</option>
+                        </select>
+                    `;
+                    dataOriginal = escapeHtml(finalCommand);
+                    finalCommand = finalCommand.replace(/{portSpeed}/g, 'auto');
+                    dataCommand = escapeHtml(finalCommand);
+                }
+
                 const safeCommand = escapeHtml(finalCommand);
                 html += `
                     <div class="diag-command">
                         <div class="diag-command-row">
-                            <div class="diag-command-text" data-command="${dataCommand}" data-original="${escapeHtml(command)}" onclick="copyCommandFromElement(this)" title="Кликните для копирования">${safeCommand}</div>
+                            <div class="diag-command-text" data-command="${dataCommand}" data-original="${dataOriginal}" onclick="copyCommandFromElement(this)" title="Кликните для копирования">${safeCommand}</div>
                             ${profileSelectHtml}
                             ${modulationSelectHtml}
+                            ${portSpeedSelectHtml}
                             <div class="diag-command-desc" title="Пояснение">${escapeHtml(description)}</div>
                             <button class="diag-copy-btn" onclick="copyCommandFromElement(this.parentElement.querySelector('.diag-command-text'))" title="Копировать команду">
                                 <i class="far fa-copy"></i>
@@ -1867,6 +1887,18 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     };
     window.updateAlcatel7330Profile = window.updateAdslProfileCommand;
+
+    window.updateDiagPortSpeedCommand = function(selectElement) {
+        const diagCommand = selectElement.closest('.diag-command');
+        if (!diagCommand) return;
+        const commandText = diagCommand.querySelector('.diag-command-text');
+        if (!commandText) return;
+        const originalCommand = commandText.getAttribute('data-original') || commandText.getAttribute('data-command') || '';
+        const selectedSpeed = selectElement.value || 'auto';
+        const newCommand = originalCommand.replace(/{portSpeed}/g, selectedSpeed);
+        commandText.textContent = newCommand;
+        commandText.setAttribute('data-command', newCommand);
+    };
 
     // Enter в любом поле активной формы => Сгенерировать конфиг
     document.addEventListener('keydown', (e) => {
