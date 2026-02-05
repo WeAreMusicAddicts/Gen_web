@@ -1008,3 +1008,46 @@ label {
     color: var(--text-primary);
     padding: 8px 12px;
 }
+
+.diag-profile-input {
+    padding: 8px 12px;
+    background-color: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    transition: border 0.2s, box-shadow 0.2s;
+    min-width: 120px;
+}
+
+.diag-profile-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+}
+
+.diag-profile-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-self: flex-start;
+}
+
+.diag-profile-label {
+    color: var(--text-secondary);
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+
+.diag-profile-input:hover {
+    border-color: var(--accent-primary);
+}
+
+.diag-profile-input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}

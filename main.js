@@ -857,6 +857,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 let finalCommand = replacePlaceholders(command);
                 let profileSelectHtml = '';
                 let modulationSelectHtml = '';
+                let profileInputHtml = '';
+                let profileInputBlock = '';
                 let portSpeedSelectHtml = '';
                 let dataCommand = escapeHtml(finalCommand);
                 let dataOriginal = escapeHtml(command);
@@ -893,10 +895,20 @@ document.addEventListener('DOMContentLoaded', async function() {
                 } else if (command.includes('{spectrumProfile}') || command.includes('{serviceProfile}')) {
                     const spectrumProfile = command.includes('{spectrumProfile}') ? '_no_AnnexM' : '';
                     const serviceProfile = command.includes('{serviceProfile}') ? 'base-12' : '';
+                    if (command.includes('{spectrumProfile}')) {
+                        profileInputHtml += `
+                            <input type="text" class="diag-profile-input" data-token="{spectrumProfile}" value="${spectrumProfile}" placeholder="PROF-NAME" oninput="updateDiagProfileTokenCommand(this)" title="PROF-NAME">
+                        `;
+                    }
+                    if (command.includes('{serviceProfile}')) {
+                        profileInputHtml += `
+                            <input type="text" class="diag-profile-input" data-token="{serviceProfile}" value="${serviceProfile}" placeholder="PROF-NAME" oninput="updateDiagProfileTokenCommand(this)" title="PROF-NAME">
+                        `;
+                    }
+                    dataOriginal = escapeHtml(finalCommand);
                     finalCommand = finalCommand
                         .replace(/{spectrumProfile}/g, spectrumProfile)
                         .replace(/{serviceProfile}/g, serviceProfile);
-                    description += ' (spectrum-profile: ' + spectrumProfile + ', service-profile: ' + serviceProfile + ')';
                 }
 
                 if (command.includes('{portSpeed}')) {
@@ -915,6 +927,58 @@ document.addEventListener('DOMContentLoaded', async function() {
                     dataCommand = escapeHtml(finalCommand);
                 }
 
+                if (command.includes('<PROF_NAME>')) {
+                    const defaultProfileName = 'PROF-NAME';
+                    profileInputHtml += `
+                        <input type="text" class="diag-profile-input" data-token="<PROF_NAME>" value="${defaultProfileName}" placeholder="PROF-NAME" oninput="updateDiagProfileTokenCommand(this)" title="PROF-NAME">
+                    `;
+                    dataOriginal = escapeHtml(finalCommand);
+                    finalCommand = finalCommand.replace(/<PROF_NAME>/g, defaultProfileName);
+                    dataCommand = escapeHtml(finalCommand);
+                }
+
+                if (command.includes('<PROF_INDEX>')) {
+                    const defaultProfileId = 'PROF-INDEX';
+                    profileInputHtml += `
+                        <input type="text" class="diag-profile-input" data-token="<PROF_INDEX>" value="${defaultProfileId}" placeholder="PROF-INDEX" oninput="updateDiagProfileTokenCommand(this)" title="PROF-INDEX" inputmode="numeric">
+                    `;
+                    dataOriginal = escapeHtml(finalCommand);
+                    finalCommand = finalCommand.replace(/<PROF_INDEX>/g, defaultProfileId);
+                    dataCommand = escapeHtml(finalCommand);
+                }
+
+                if (command.includes('<PROF_INDEX_NOISE>')) {
+                    const defaultProfileId = 'PROF-INDEX';
+                    profileInputHtml += `
+                        <div class="diag-profile-row">
+                            <span class="diag-profile-label">NM-PROF:</span>
+                            <input type="text" class="diag-profile-input" data-token="<PROF_INDEX_NOISE>" value="${defaultProfileId}" placeholder="PROF-INDEX" oninput="updateDiagProfileTokenCommand(this)" title="PROF-INDEX (noise-margin)" inputmode="numeric">
+                        </div>
+                    `;
+                    dataOriginal = escapeHtml(finalCommand);
+                    finalCommand = finalCommand.replace(/<PROF_INDEX_NOISE>/g, defaultProfileId);
+                    dataCommand = escapeHtml(finalCommand);
+                    description = '';
+                }
+
+                if (command.includes('<PROF_INDEX_DS>')) {
+                    const defaultProfileId = 'PROF-INDEX';
+                    profileInputHtml += `
+                        <div class="diag-profile-row">
+                            <span class="diag-profile-label">DS-PROF:</span>
+                            <input type="text" class="diag-profile-input" data-token="<PROF_INDEX_DS>" value="${defaultProfileId}" placeholder="PROF-INDEX" oninput="updateDiagProfileTokenCommand(this)" title="PROF-INDEX (ds-rate)" inputmode="numeric">
+                        </div>
+                    `;
+                    dataOriginal = escapeHtml(finalCommand);
+                    finalCommand = finalCommand.replace(/<PROF_INDEX_DS>/g, defaultProfileId);
+                    dataCommand = escapeHtml(finalCommand);
+                    description = '';
+                }
+
+                if (profileInputHtml) {
+                    profileInputBlock = `<div class="diag-profile-stack">${profileInputHtml}</div>`;
+                }
+
                 const safeCommand = escapeHtml(finalCommand);
                 html += `
                     <div class="diag-command">
@@ -922,6 +986,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                             <div class="diag-command-text" data-command="${dataCommand}" data-original="${dataOriginal}" onclick="copyCommandFromElement(this)" title="Кликните для копирования">${safeCommand}</div>
                             ${profileSelectHtml}
                             ${modulationSelectHtml}
+                            ${profileInputBlock}
                             ${portSpeedSelectHtml}
                             <div class="diag-command-desc" title="Пояснение">${escapeHtml(description)}</div>
                             <button class="diag-copy-btn" onclick="copyCommandFromElement(this.parentElement.querySelector('.diag-command-text'))" title="Копировать команду">
@@ -1887,6 +1952,38 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     };
     window.updateAlcatel7330Profile = window.updateAdslProfileCommand;
+
+    window.updateDiagProfileTokenCommand = function(inputElement) {
+        const diagCommand = inputElement.closest('.diag-command');
+        if (!diagCommand) return;
+        const commandText = diagCommand.querySelector('.diag-command-text');
+        if (!commandText) return;
+
+        const originalCommand = commandText.getAttribute('data-original') || commandText.getAttribute('data-command') || '';
+        let newCommand = originalCommand;
+
+        const inputs = diagCommand.querySelectorAll('.diag-profile-input');
+        inputs.forEach(input => {
+            const token = input.getAttribute('data-token');
+            if (!token) return;
+            const value = input.value || '';
+            newCommand = newCommand.split(token).join(value);
+        });
+
+        const vpiVciRaw = document.getElementById('adsl-vpivci')?.value.trim() || '0/35';
+        const [vpi = '0', vci = '35'] = vpiVciRaw.split('/').map(v => v.trim());
+        const portInfo = document.getElementById('adsl-port')?.value || '0/1';
+        const portNum = portInfo.includes('/') ? portInfo.split('/')[1] : portInfo;
+
+        newCommand = newCommand.replace(/{vpi}/g, vpi).replace(/{vci}/g, vci);
+        newCommand = newCommand.replace(/1\/1\/\{port\}/g, `1/1/${portInfo}`);
+        newCommand = newCommand.replace(/\{port\}:\{vpi\}:\{vci\}/g, `${portInfo}:${vpi}:${vci}`);
+        newCommand = newCommand.replace(/{portNum}/g, portNum);
+        newCommand = newCommand.replace(/{port}/g, portInfo);
+
+        commandText.textContent = newCommand;
+        commandText.setAttribute('data-command', newCommand);
+    };
 
     window.updateDiagPortSpeedCommand = function(selectElement) {
         const diagCommand = selectElement.closest('.diag-command');
