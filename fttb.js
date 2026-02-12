@@ -907,6 +907,17 @@ virtual-cable-test`, description: "Диагностика кабеля" },
       "Работа с портом": [
         { command: `show interface ethernet status`, description: "Состояние портов" },
         { command: `show interface ethernet {port}`, description: "Информация о порту" },
+        { command: `show interface Ethernet{port} detail`, description: "Детальная информация по порту" },
+        { command: `clear counters interface ethernet {port}`, description: "Сброс счетчиков порта" },
+      ],
+      "Конфигурация": [
+        { command: `show running-config interface Ethernet{port}`, description: "Текущая конфигурация порта" },
+      ],
+      "VLAN": [
+        { command: `show vlan`, description: "Список VLAN" },
+      ],
+      "MAC-таблица": [
+        { command: `show mac-address-table interface ethernet {port}`, description: "MAC-адреса на порту" },
       ],
     },
   },
