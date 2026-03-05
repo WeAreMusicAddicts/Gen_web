@@ -48,6 +48,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Huawei
         huawei: '1/1/1',
         electra: '0/1/26',
+        iskratel_mwgl0s92: '0/1',
         // Уральский филиал
         eltex_ma4000: '1/1/1',
         eltex_ltp: '1/1',
@@ -2275,6 +2276,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             'huawei_5600_vdsl',
             'huawei_58xx_vdsl',
             'huawei_5605',
+            'iskratel_mwgl0s92',
             'photel',
             'genew_photel_px90',
             'opnet_rt1000',
@@ -2293,6 +2295,9 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         if (slashPairDevices.has(device)) {
             if (!slashPair.test(trimmed)) {
+                if (device === 'iskratel_mwgl0s92') {
+                    return { valid: false, error: 'Порт должен быть в формате slot/port (например: 0/1)' };
+                }
                 return { valid: false, error: 'Порт должен быть в формате X/Y (например: 1/1)' };
             }
             return { valid: true, value: trimmed };

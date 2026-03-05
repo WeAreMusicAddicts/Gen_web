@@ -403,6 +403,63 @@ vdsl2 snrmargin-prf <PROF_NAME>`, description: "Смена профиля SNR" }
     },
   },
 
+  iskratel_mwgl0s92: {
+    label: "Iskratel MSAN MWGL0S92",
+    services: {
+      pppoe: ({ port, vlan }) => {
+        const [x = '0', y = '1'] = String(port || '0/1').split('/');
+        const basePort = `${x}/${y}`;
+        return [
+          `configure`,
+          `interface ${basePort}/1`,
+          `pvc 8/35`,
+          `vlan participation exclude 1`,
+          `vlan participation include ${vlan || '*VLAN*'}`,
+          `vlan pvid ${vlan || '*VLAN*'}`,
+          `mac access-group ACL-PPPoE in 1`,
+          `port-security`,
+          `port-security max-dynamic 10`,
+          `pppoe state enable-client`,
+          `description "PPPoE"`,
+        ];
+      },
+      iptv: ({ port, vlan }) => {
+        const [x = '0', y = '1'] = String(port || '0/1').split('/');
+        const basePort = `${x}/${y}`;
+        return [
+          `configure`,
+          `interface ${basePort}/3`,
+          `pvc 0/34`,
+          `vlan participation exclude 1`,
+          `vlan participation include ${vlan || '*VLAN*'}`,
+          `vlan pvid ${vlan || '*VLAN*'}`,
+          `multicast group-limit 2`,
+          `port-security`,
+          `port-security max-dynamic 10`,
+          `qos-profile QoS_IP-TV`,
+          `description "IP-TV"`,
+        ];
+      },
+    },
+    diagnostics: {
+      "Проверка конфигурации порта": [
+        { command: `show running-config {port}`, description: "Просмотр конфигурации порта" },
+        { command: `show running-config {port} all`, description: "Полная конфигурация порта" },
+      ],
+      "Проверка PVC": [
+        { command: `show running-config {port}/1`, description: "Проверка PVC PPPoE" },
+        { command: `show running-config {port}/3`, description: "Проверка PVC IP-TV" },
+      ],
+      "MAC и VLAN": [
+        { command: `show mac-addr-table`, description: "Просмотр MAC-таблицы" },
+        { command: `show vlan brief`, description: "Краткий список VLAN" },
+      ],
+      "Состояние DSL": [
+        { command: `show dsl port state {port}`, description: "Состояние DSL-порта" },
+      ],
+    },
+  },
+
   photel: {
     label: "Photel iAN B1205",
     services: {
