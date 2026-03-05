@@ -776,7 +776,7 @@ vdsl2 snrmargin-prf <PROF_NAME>`, description: "Смена профиля SNR" }
       ],
       "Работа с портом": [
         { command: `update provision {slot} {portNum} xdslpc 1,0\nupdate provision {slot} {portNum} xdslpc 1,1`, description: "Перезапуск клиентского порта" },
-        { command: `update provision {slot} {portNum} xdslpc 4,P\nsaveconfig`, description: "Смена профиля (P — имя профиля)" },
+        { command: `update provision {slot} {portNum} xdslpc 4,<PROF_NAME>\nsaveconfig`, description: "Смена профиля (<PROF_NAME> — имя профиля)" },
         { command: `show status {slot} {portNum} adslps`, description: "Вторичные параметры на порту" },
         { command: `show provision {slot} {portNum} xdslpc`, description: "Конфигурация порта" },
         { command: `show status {slot} 0 igmppt {portNum}`, description: "Multicast-группы на порту" },
