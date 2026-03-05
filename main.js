@@ -855,13 +855,14 @@ document.addEventListener('DOMContentLoaded', async function() {
             
             commands.forEach(({ command, description }) => {
                 let finalCommand = replacePlaceholders(command);
+                const originalCommandWithTokens = finalCommand;
                 let profileSelectHtml = '';
                 let modulationSelectHtml = '';
                 let profileInputHtml = '';
                 let profileInputBlock = '';
                 let portSpeedSelectHtml = '';
                 let dataCommand = escapeHtml(finalCommand);
-                let dataOriginal = escapeHtml(command);
+                let dataOriginal = escapeHtml(originalCommandWithTokens);
 
                 // Устройства с выбором профиля
                 const devicesWithProfile = ['alcatel_7330', 'zyxel_5000', 'zyxel_1000', 'zyxel_aam1008', 'alcatel_7324'];
@@ -897,15 +898,15 @@ document.addEventListener('DOMContentLoaded', async function() {
                     const serviceProfile = command.includes('{serviceProfile}') ? 'base-12' : '';
                     if (command.includes('{spectrumProfile}')) {
                         profileInputHtml += `
-                            <input type="text" class="diag-profile-input" data-token="{spectrumProfile}" value="${spectrumProfile}" placeholder="PROF-NAME" oninput="updateDiagProfileTokenCommand(this)" title="PROF-NAME">
+                            <input type="text" class="diag-profile-input" data-token="{spectrumProfile}" value="${spectrumProfile}" placeholder="PROF-NAME" onfocus="selectDiagProfileInput(this)" oninput="updateDiagProfileTokenCommand(this)" title="PROF-NAME">
                         `;
                     }
                     if (command.includes('{serviceProfile}')) {
                         profileInputHtml += `
-                            <input type="text" class="diag-profile-input" data-token="{serviceProfile}" value="${serviceProfile}" placeholder="PROF-NAME" oninput="updateDiagProfileTokenCommand(this)" title="PROF-NAME">
+                            <input type="text" class="diag-profile-input" data-token="{serviceProfile}" value="${serviceProfile}" placeholder="PROF-NAME" onfocus="selectDiagProfileInput(this)" oninput="updateDiagProfileTokenCommand(this)" title="PROF-NAME">
                         `;
                     }
-                    dataOriginal = escapeHtml(finalCommand);
+                    dataOriginal = escapeHtml(originalCommandWithTokens);
                     finalCommand = finalCommand
                         .replace(/{spectrumProfile}/g, spectrumProfile)
                         .replace(/{serviceProfile}/g, serviceProfile);
@@ -922,7 +923,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                             <option value="10_half">10_half</option>
                         </select>
                     `;
-                    dataOriginal = escapeHtml(finalCommand);
+                    dataOriginal = escapeHtml(originalCommandWithTokens);
                     finalCommand = finalCommand.replace(/{portSpeed}/g, 'auto');
                     dataCommand = escapeHtml(finalCommand);
                 }
@@ -930,9 +931,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (command.includes('<PROF_NAME>')) {
                     const defaultProfileName = 'PROF-NAME';
                     profileInputHtml += `
-                        <input type="text" class="diag-profile-input" data-token="<PROF_NAME>" value="${defaultProfileName}" placeholder="PROF-NAME" oninput="updateDiagProfileTokenCommand(this)" title="PROF-NAME">
+                        <input type="text" class="diag-profile-input" data-token="<PROF_NAME>" value="${defaultProfileName}" placeholder="PROF-NAME" onfocus="selectDiagProfileInput(this)" oninput="updateDiagProfileTokenCommand(this)" title="PROF-NAME">
                     `;
-                    dataOriginal = escapeHtml(finalCommand);
+                    dataOriginal = escapeHtml(originalCommandWithTokens);
                     finalCommand = finalCommand.replace(/<PROF_NAME>/g, defaultProfileName);
                     dataCommand = escapeHtml(finalCommand);
                 }
@@ -940,9 +941,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (command.includes('<PROF_INDEX>')) {
                     const defaultProfileId = 'PROF-INDEX';
                     profileInputHtml += `
-                        <input type="text" class="diag-profile-input" data-token="<PROF_INDEX>" value="${defaultProfileId}" placeholder="PROF-INDEX" oninput="updateDiagProfileTokenCommand(this)" title="PROF-INDEX" inputmode="numeric">
+                        <input type="text" class="diag-profile-input" data-token="<PROF_INDEX>" value="${defaultProfileId}" placeholder="PROF-INDEX" onfocus="selectDiagProfileInput(this)" oninput="updateDiagProfileTokenCommand(this)" title="PROF-INDEX" inputmode="numeric">
                     `;
-                    dataOriginal = escapeHtml(finalCommand);
+                    dataOriginal = escapeHtml(originalCommandWithTokens);
                     finalCommand = finalCommand.replace(/<PROF_INDEX>/g, defaultProfileId);
                     dataCommand = escapeHtml(finalCommand);
                 }
@@ -952,10 +953,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                     profileInputHtml += `
                         <div class="diag-profile-row">
                             <span class="diag-profile-label">NM-PROF:</span>
-                            <input type="text" class="diag-profile-input" data-token="<PROF_INDEX_NOISE>" value="${defaultProfileId}" placeholder="PROF-INDEX" oninput="updateDiagProfileTokenCommand(this)" title="PROF-INDEX (noise-margin)" inputmode="numeric">
+                            <input type="text" class="diag-profile-input" data-token="<PROF_INDEX_NOISE>" value="${defaultProfileId}" placeholder="PROF-INDEX" onfocus="selectDiagProfileInput(this)" oninput="updateDiagProfileTokenCommand(this)" title="PROF-INDEX (noise-margin)" inputmode="numeric">
                         </div>
                     `;
-                    dataOriginal = escapeHtml(finalCommand);
+                    dataOriginal = escapeHtml(originalCommandWithTokens);
                     finalCommand = finalCommand.replace(/<PROF_INDEX_NOISE>/g, defaultProfileId);
                     dataCommand = escapeHtml(finalCommand);
                     description = '';
@@ -966,10 +967,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                     profileInputHtml += `
                         <div class="diag-profile-row">
                             <span class="diag-profile-label">DS-PROF:</span>
-                            <input type="text" class="diag-profile-input" data-token="<PROF_INDEX_DS>" value="${defaultProfileId}" placeholder="PROF-INDEX" oninput="updateDiagProfileTokenCommand(this)" title="PROF-INDEX (ds-rate)" inputmode="numeric">
+                            <input type="text" class="diag-profile-input" data-token="<PROF_INDEX_DS>" value="${defaultProfileId}" placeholder="PROF-INDEX" onfocus="selectDiagProfileInput(this)" oninput="updateDiagProfileTokenCommand(this)" title="PROF-INDEX (ds-rate)" inputmode="numeric">
                         </div>
                     `;
-                    dataOriginal = escapeHtml(finalCommand);
+                    dataOriginal = escapeHtml(originalCommandWithTokens);
                     finalCommand = finalCommand.replace(/<PROF_INDEX_DS>/g, defaultProfileId);
                     dataCommand = escapeHtml(finalCommand);
                     description = '';
@@ -1952,6 +1953,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     };
     window.updateAlcatel7330Profile = window.updateAdslProfileCommand;
+
+    window.selectDiagProfileInput = function(inputElement) {
+        if (!inputElement) return;
+        inputElement.select();
+    };
 
     window.updateDiagProfileTokenCommand = function(inputElement) {
         const diagCommand = inputElement.closest('.diag-command');
