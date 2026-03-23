@@ -61,7 +61,7 @@ window.fttbDevices = {
         { command: `show interface {portType} {port}`, description: "Общая информация о порте" },
         { command: `show interface {portType} {port} status`, description: "Up/down, скорость, дуплекс" },
         { command: `show interface {portType} {port} counters`, description: "Счетчики/ошибки на порту" },
-        { command: `show cable-diagnostics tdr interface {portType} {port}`, description: "TDR-тест кабеля" },
+        { command: `test cable-diagnostics gigabitethernet {port}`, description: "TDR-тест кабеля" },
       ],
       "Конфигурация": [
         { command: `show running-config interface {portType} {port}`, description: "Текущая конфигурация порта" },
@@ -137,6 +137,7 @@ window.fttbDevices = {
         { command: `show interface {portType} {port}`, description: "Информация о порте" },
         { command: `show interface {portType} {port} status`, description: "Статус порта" },
         { command: `show interface {portType} {port} counters`, description: "Счетчики порта" },
+        { command: `show cable-diagnostics tdr interface {portType} {port}`, description: "TDR-тест кабеля" },
       ],
       "Конфигурация": [
         { command: `show running-config interface {portType} {port}`, description: "Конфигурация порта" },
