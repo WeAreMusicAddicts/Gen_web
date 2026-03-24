@@ -2595,7 +2595,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
 
                 if (lteDevice === 'eltex_lte_8x') {
-                    if (gponOnt) clearFieldError(gponOnt);
+                    if (gponOnt) showFieldValid(gponOnt);
                     return isValid;
                 }
             }
