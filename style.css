@@ -979,6 +979,10 @@ label {
     display: none !important;
 }
 
+#gpon-form.gpon-lte #gpon-auth-fields {
+    display: none !important;
+}
+
 /* Выпадающий список профилей для Alcatel 7330 */
 .diag-profile-select {
     padding: 8px 12px;

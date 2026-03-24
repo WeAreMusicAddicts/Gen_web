@@ -394,7 +394,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         const branchValue = branchSelect?.value || 'ural';
         const isSibBranch = branchValue !== 'ural';
 
-        if (isSibBranch && branchConfigSelect && branchConfigSelect.value) {
+        if (device === 'eltex_lte') {
+            device = document.getElementById('gpon-lte-model')?.value || 'eltex_lte_8x';
+        } else if (isSibBranch && branchConfigSelect && branchConfigSelect.value) {
             device = branchConfigSelect.value;
         }
 
@@ -403,6 +405,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         const sn = document.getElementById('gpon-sn').value.trim();
         const ploam = document.getElementById('gpon-ploam').value.trim();
         const gponDescription = document.getElementById('gpon-description').value.trim();
+        const lteMac = normalizeMacAddress(document.getElementById('gpon-lte-mac')?.value.trim());
+        const lteMacCompact = getMacCompact(lteMac);
+        const lteDescription = document.getElementById('gpon-lte-description')?.value.trim();
         const cvid = document.getElementById('gpon-cvid')?.value.trim() || '107';
         const svid = document.getElementById('gpon-svid')?.value.trim() || '1647';
         const eltexVpnEnabled = document.getElementById('gpon-eltex-vpn')?.checked;
@@ -526,6 +531,19 @@ document.addEventListener('DOMContentLoaded', async function() {
                     commands.push(`service-port vlan ${voipVlan} gpon ${gponPort} ont ${ontIdx} gemport 2 multi-service user-vlan 30 tag-transform translate inbound traffic-table index 9 outbound traffic-table index 9`);
                     commands.push('return');
                 }
+            }
+        } else if (device === 'eltex_lte_8x' || device === 'eltex_lte_4x') {
+            if (devices.gpon[device]?.services?.default) {
+                commands = commands.concat(
+                    devices.gpon[device].services.default({
+                        ontId: ontField,
+                        mac: lteMac || 'xx:xx:xx:xx:xx:xx',
+                        macCompact: lteMacCompact || 'xxxxxxxxxxxx',
+                        description: lteDescription || 'xxxxxxxx_yyyyyyyy',
+                    })
+                );
+            } else {
+                commands.push(`! Шаблон для ${device} не найден.`);
             }
         } else if (device === 'electra') {
             const electraSn = document.getElementById('gpon-electra-sn')?.value.trim();
@@ -809,6 +827,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                     out = out.replace(/{ontIdx}/g, ontIdx);
                     out = out.replace(/{gponPort}/g, gponPort);
                     out = out.replace(/{frameSlot}/g, frameSlot);
+                } else if ((device === 'eltex_lte_8x' || device === 'eltex_lte_4x')) {
+                    const mac = normalizeMacAddress(document.getElementById('gpon-lte-mac')?.value.trim()) || '{mac}';
+                    out = out.replace(/{mac}/g, mac);
                 } else if (device === 'electra' && portInfo) {
                     const parts = String(portInfo).split('/').filter(Boolean);
                     const slot = parts[0] || '';
@@ -1183,10 +1204,28 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     function getGponEffectiveDevice() {
         const deviceValue = document.getElementById('gpon-device')?.value || '';
+        if (deviceValue === 'eltex_lte') {
+            return document.getElementById('gpon-lte-model')?.value || 'eltex_lte_8x';
+        }
         const branchValue = document.getElementById('gpon-branch')?.value || 'ural';
         const configValue = document.getElementById('gpon-branch-config')?.value || '';
         if (branchValue !== 'ural' && configValue) return configValue;
         return deviceValue;
+    }
+
+    function normalizeMacAddress(value) {
+        const hex = String(value || '')
+            .replace(/[^0-9a-fA-F]/g, '')
+            .slice(0, 12)
+            .toLowerCase();
+        return hex.match(/.{1,2}/g)?.join(':') || '';
+    }
+
+    function getMacCompact(value) {
+        return String(value || '')
+            .replace(/[^0-9a-fA-F]/g, '')
+            .slice(0, 12)
+            .toLowerCase();
     }
 
     function setDefaultGponOnt(deviceValue) {
@@ -1196,6 +1235,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             ontInput.value = '1/1/1';
         } else if (deviceValue === 'electra') {
             ontInput.value = '0/1/26';
+        } else if (deviceValue === 'eltex_lte_8x') {
+            ontInput.value = '';
+        } else if (deviceValue === 'eltex_lte_4x') {
+            ontInput.value = '1/1';
         } else if (deviceValue === 'eltex_ltp' || deviceValue.startsWith('eltex_ltp_')) {
             ontInput.value = '1/1';
         } else {
@@ -1207,7 +1250,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         const gponBranchSelect = document.getElementById('gpon-branch');
         const gponDeviceSelect = document.getElementById('gpon-device');
         if (!gponBranchSelect || !gponDeviceSelect) return;
-        if (gponDeviceSelect.value === 'huawei') {
+        if (gponDeviceSelect.value === 'huawei' || gponDeviceSelect.value === 'electra' || gponDeviceSelect.value === 'eltex_lte') {
             gponBranchSelect.value = 'ural';
             gponBranchSelect.disabled = true;
         } else {
@@ -1233,7 +1276,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 opt.hidden = false;
                 return;
             }
-            if (deviceValue === 'huawei' || deviceValue === 'electra') {
+            if (deviceValue === 'huawei' || deviceValue === 'electra' || deviceValue === 'eltex_lte') {
                 opt.disabled = true;
                 opt.hidden = true;
                 return;
@@ -1316,7 +1359,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         const gponBranchSelect = document.getElementById('gpon-branch');
         const ontInput = document.getElementById('gpon-ont');
 
-        if (this.value === 'huawei' && gponBranchSelect) {
+        if ((this.value === 'huawei' || this.value === 'electra' || this.value === 'eltex_lte') && gponBranchSelect) {
             gponBranchSelect.value = 'ural';
         }
 
@@ -1331,6 +1374,36 @@ document.addEventListener('DOMContentLoaded', async function() {
         updateGponFields();
         updateDiagnostics('gpon', effectiveDevice, ontInput.value);
     });
+
+    const gponLteModelSelect = document.getElementById('gpon-lte-model');
+    if (gponLteModelSelect) {
+        gponLteModelSelect.addEventListener('change', function() {
+            const ontInput = document.getElementById('gpon-ont');
+            setDefaultGponOnt(this.value);
+            updateGponFields();
+            updateDiagnostics('gpon', this.value, ontInput?.value || '');
+        });
+    }
+
+    const gponLteMacField = document.getElementById('gpon-lte-mac');
+    if (gponLteMacField) {
+        gponLteMacField.addEventListener('input', function() {
+            const normalized = normalizeMacAddress(this.value);
+            if (this.value !== normalized) this.value = normalized;
+            if (document.getElementById('gpon-device')?.value === 'eltex_lte') {
+                updateDiagnostics('gpon', getGponEffectiveDevice(), document.getElementById('gpon-ont')?.value || '');
+            }
+        });
+    }
+
+    const gponLteDescriptionField = document.getElementById('gpon-lte-description');
+    if (gponLteDescriptionField) {
+        gponLteDescriptionField.addEventListener('input', () => {
+            if (document.getElementById('gpon-device')?.value === 'eltex_lte') {
+                updateDiagnostics('gpon', getGponEffectiveDevice(), document.getElementById('gpon-ont')?.value || '');
+            }
+        });
+    }
 
     const eltexVpnCheckbox = document.getElementById('gpon-eltex-vpn');
     const eltexVpnVlanField = document.getElementById('gpon-eltex-vpn-vlan-field');
@@ -1395,7 +1468,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Функция обновления полей GPON
     function updateGponFields() {
         const gponForm = document.getElementById('gpon-form');
+        const gponOntInput = document.getElementById('gpon-ont');
+        const gponOntGroup = gponOntInput?.closest('.form-group');
+        const gponOntLabel = document.querySelector('label[for="gpon-ont"]');
         const eltexFields = document.getElementById('gpon-eltex-fields');
+        const lteFields = document.getElementById('gpon-lte-fields');
         const eltexVpnRow = document.getElementById('gpon-eltex-vpn-row');
         const eltexVpnVlanField = document.getElementById('gpon-eltex-vpn-vlan-field');
         const eltexVpnCheckbox = document.getElementById('gpon-eltex-vpn');
@@ -1412,15 +1489,22 @@ document.addEventListener('DOMContentLoaded', async function() {
         const branchValue = document.getElementById('gpon-branch')?.value || 'ural';
         const configValue = document.getElementById('gpon-branch-config')?.value || '';
         const isSibBranch = branchValue !== 'ural';
-        const effectiveDevice = isSibBranch && configValue ? configValue : deviceValue;
+        const effectiveDevice = deviceValue === 'eltex_lte'
+            ? (document.getElementById('gpon-lte-model')?.value || 'eltex_lte_8x')
+            : (isSibBranch && configValue ? configValue : deviceValue);
 
         // Hide all by default
         gponForm?.classList.remove('gpon-ural');
         gponForm?.classList.remove('gpon-sib');
         gponForm?.classList.remove('gpon-ltp');
         gponForm?.classList.remove('gpon-electra');
+        gponForm?.classList.remove('gpon-lte');
         gponForm?.classList.remove('gpon-eltex-hide-desc');
+        if (gponOntGroup) gponOntGroup.classList.remove('hidden');
+        if (gponOntLabel) gponOntLabel.innerHTML = '<i class="fas fa-hashtag"></i> GPON ID (x/y/z)';
+        if (gponOntInput) gponOntInput.placeholder = 'например: 1/1/1';
         eltexFields.classList.add('hidden');
+        if (lteFields) lteFields.classList.add('hidden');
         if (eltexVpnRow) eltexVpnRow.classList.add('hidden');
         if (eltexVpnVlanField) eltexVpnVlanField.classList.add('hidden');
         huaweiFields.classList.add('hidden');
@@ -1450,6 +1534,21 @@ document.addEventListener('DOMContentLoaded', async function() {
             electraActions.classList.remove('hidden');
             if (gponBranchGroup) gponBranchGroup.classList.add('hidden');
             if (gponConfigGroup) gponConfigGroup.classList.add('hidden');
+            return;
+        }
+
+        if (effectiveDevice === 'eltex_lte_8x' || effectiveDevice === 'eltex_lte_4x') {
+            gponForm?.classList.add('gpon-ural');
+            gponForm?.classList.add('gpon-lte');
+            lteFields?.classList.remove('hidden');
+            if (gponBranchGroup) gponBranchGroup.classList.add('hidden');
+            if (gponConfigGroup) gponConfigGroup.classList.add('hidden');
+            if (effectiveDevice === 'eltex_lte_8x') {
+                gponOntGroup?.classList.add('hidden');
+            } else {
+                if (gponOntLabel) gponOntLabel.innerHTML = '<i class="fas fa-hashtag"></i> GPON ID (x/y)';
+                if (gponOntInput) gponOntInput.placeholder = 'например: 1/1';
+            }
             return;
         }
 
@@ -1572,6 +1671,12 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (eltexVpnCheckbox) eltexVpnCheckbox.checked = false;
         if (eltexVpnVlan) eltexVpnVlan.value = '';
         if (eltexVpnVlanField) eltexVpnVlanField.classList.add('hidden');
+        const lteModelField = document.getElementById('gpon-lte-model');
+        const lteMacField = document.getElementById('gpon-lte-mac');
+        const lteDescriptionField = document.getElementById('gpon-lte-description');
+        if (lteModelField) lteModelField.value = 'eltex_lte_8x';
+        if (lteMacField) lteMacField.value = '';
+        if (lteDescriptionField) lteDescriptionField.value = '';
         const electraSnField = document.getElementById('gpon-electra-sn');
         const electraDescField = document.getElementById('gpon-electra-description');
         const electraMacField = document.getElementById('gpon-electra-mac');
@@ -2467,6 +2572,33 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         } else if (tech === 'gpon') {
             const gponOnt = document.getElementById('gpon-ont');
+            let lteDevice = document.getElementById('gpon-device')?.value || '';
+            if (lteDevice === 'eltex_lte') {
+                lteDevice = document.getElementById('gpon-lte-model')?.value || 'eltex_lte_8x';
+                const lteMacField = document.getElementById('gpon-lte-mac');
+                const lteDescriptionField = document.getElementById('gpon-lte-description');
+                const normalizedMac = normalizeMacAddress(lteMacField?.value || '');
+
+                if (!lteMacField?.value.trim() || getMacCompact(normalizedMac).length !== 12) {
+                    showFieldError(lteMacField, 'MAC должен содержать 12 шестнадцатеричных символов');
+                    isValid = false;
+                } else {
+                    lteMacField.value = normalizedMac;
+                    showFieldValid(lteMacField);
+                }
+
+                if (!lteDescriptionField?.value.trim()) {
+                    showFieldError(lteDescriptionField, 'Описание не может быть пустым');
+                    isValid = false;
+                } else {
+                    showFieldValid(lteDescriptionField);
+                }
+
+                if (lteDevice === 'eltex_lte_8x') {
+                    if (gponOnt) clearFieldError(gponOnt);
+                    return isValid;
+                }
+            }
             if (gponOnt) {
                 const value = gponOnt.value.trim();
                 if (!value) {
@@ -2477,7 +2609,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                     const branchValue = document.getElementById('gpon-branch')?.value || 'ural';
                     const branchConfigSelect = document.getElementById('gpon-branch-config');
 
-                    if (branchValue !== 'ural') {
+                    if (device === 'eltex_lte') {
+                        device = document.getElementById('gpon-lte-model')?.value || 'eltex_lte_8x';
+                    } else if (branchValue !== 'ural') {
                         if (!branchConfigSelect?.value) {
                             showFieldError(branchConfigSelect, '\u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u043a\u043e\u043d\u0444\u0438\u0433\u0443\u0440\u0430\u0446\u0438\u044e \u0434\u043b\u044f \u0444\u0438\u043b\u0438\u0430\u043b\u0430');
                             isValid = false;
@@ -2488,8 +2622,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                     }
 
                     const isLtpDevice = device === 'eltex_ltp' || device.startsWith('eltex_ltp_');
+                    const isLte4xDevice = device === 'eltex_lte_4x';
                     const parts = value.split('/');
-                    const expectedParts = isLtpDevice ? 2 : 3;
+                    const expectedParts = (isLtpDevice || isLte4xDevice) ? 2 : 3;
                     if (parts.length !== expectedParts) {
                         showFieldError(
                             gponOnt,

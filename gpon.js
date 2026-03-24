@@ -229,6 +229,72 @@ window.gponDevices = {
   },
 
   // Сибирские филиалы - Алтай (АФ)
+  eltex_lte_8x: {
+    label: "Eltex LTE-8x",
+    services: {
+      default: ({ mac, description }) => [
+        `ont_mac ${mac}`,
+        `add config`,
+        `set profile rules 8`,
+        `set profile ports 2`,
+        `set description ${description || 'xxxxxxxx_yyyyyyyy'}`,
+        `save`,
+        `reconfigure`,
+      ].filter(Boolean),
+    },
+    diagnostics: {
+      "Поиск терминала": [
+        { command: `show ont list`, description: "Поиск терминала в списке ONT" },
+      ],
+      "Состояние и конфигурация": [
+        { command: `ont_mac {mac}`, description: "Переход в контекст терминала по MAC" },
+        { command: `show state`, description: "Состояние терминала" },
+        { command: `show config`, description: "Текущая конфигурация терминала" },
+      ],
+      "Статистика": [
+        { command: `stat pon receive`, description: "Статистика приема по PON" },
+        { command: `stat pon transmit`, description: "Статистика передачи по PON" },
+        { command: `stat uni0 receive`, description: "Статистика приема по UNI0" },
+        { command: `stat uni0 transmit`, description: "Статистика передачи по UNI0" },
+      ],
+      "MAC-таблица": [
+        { command: `show mac table`, description: "MAC-таблица терминала" },
+      ],
+    },
+  },
+
+  eltex_lte_4x: {
+    label: "Eltex LTE-4x",
+    services: {
+      default: ({ ontId, macCompact, description }) => [
+        `interface ont ${ontId}`,
+        `description "${description || 'xxxxxxxx_yyyyyyyy'}"`,
+        `serial "ELTX${macCompact}"`,
+        `password "0123456789"`,
+        `service 0 profile cross-connect "NTU-1-PPPoE"`,
+        `service 0 profile dba "NTU-1"`,
+        `profile ports "NTU-1_PPPoE"`,
+        `do save`,
+        `do commit`,
+      ].filter(Boolean),
+    },
+    diagnostics: {
+      "Поиск терминала": [
+        { command: `show interface ont 0-3 connected`, description: "Поиск нужного терминала среди подключенных ONT" },
+      ],
+      "Состояние и оптика": [
+        { command: `show interface ont {ontId} laser`, description: "Оптические параметры ONT" },
+      ],
+      "Конфигурация и счетчики": [
+        { command: `show interface ont {ontId} configuration`, description: "Текущая конфигурация ONT" },
+        { command: `show interface ont {ontId} counters`, description: "Счетчики ONT" },
+      ],
+      "MAC-таблица": [
+        { command: `show mac interface ont`, description: "MAC-адреса на ONT" },
+      ],
+    },
+  },
+
   eltex_ma4000_af_csm: {
     label: "Алтай (АФ) - CSM",
     type: "csm",

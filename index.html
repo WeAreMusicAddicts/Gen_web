@@ -306,6 +306,7 @@
                             <option value="huawei">Huawei OLT</option>
                             <option value="eltex_ma4000">Eltex MA4000</option>
                             <option value="eltex_ltp">Eltex LTP</option>
+                            <option value="eltex_lte">Eltex LTE (Магнитка)</option>
                             <option value="electra">Electra</option>
                         </select>
                     </div>
@@ -453,6 +454,28 @@
                                         <label for="gpon-svid">SVID (внешн.)</label>
                                         <input type="number" id="gpon-svid" class="form-input" placeholder="например: 1647" value="1647">
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group-full hidden" id="gpon-lte-fields">
+                        <label><i class="fas fa-terminal"></i> Eltex LTE (Магнитка)</label>
+                        <div class="vlan-input-group">
+                            <div class="vlan-input-group-row">
+                                <div class="vlan-field">
+                                    <label for="gpon-lte-model"><i class="fas fa-server"></i> Модель</label>
+                                    <select id="gpon-lte-model" class="form-select">
+                                        <option value="eltex_lte_8x">LTE-8x</option>
+                                        <option value="eltex_lte_4x">LTE-4x</option>
+                                    </select>
+                                </div>
+                                <div class="vlan-field">
+                                    <label for="gpon-lte-mac"><i class="fas fa-network-wired"></i> MAC ONT</label>
+                                    <input type="text" id="gpon-lte-mac" class="form-input" placeholder="например: 58F85C7E03EA или 58:F8:5C:7E:03:EA">
+                                </div>
+                                <div class="vlan-field">
+                                    <label for="gpon-lte-description"><i class="fas fa-file-alt"></i> Описание (Description)</label>
+                                    <input type="text" id="gpon-lte-description" class="form-input" placeholder="например: Bolotnikova_59">
                                 </div>
                             </div>
                         </div>
