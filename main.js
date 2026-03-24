@@ -15,6 +15,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     const diagOutput = document.getElementById('diagnostics-output');
     const mcastSection = document.getElementById('mcast-output-section');
     const mcastOutput = document.getElementById('config-output-mcast');
+    const diagnosticsState = {
+        html: '',
+        key: '',
+        timerId: 0,
+    };
 
     // Проверка загрузки устройств
     function checkDevicesLoaded() {
@@ -120,6 +125,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     function clearConfigOutput() {
         configOutput.textContent = '// Выберите технологию, заполните поля и нажмите "Сгенерировать"';
         diagOutput.innerHTML = '';
+        diagnosticsState.html = '';
+        diagnosticsState.key = '';
         if (mcastSection) mcastSection.classList.add('hidden');
         if (mcastOutput) mcastOutput.textContent = '';
     }
@@ -283,7 +290,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         container.innerHTML = html;
         // Повторно инициализируем обработчики валидации для новых
 // полей
-        setTimeout(initValidationHandlers, 50);
+        initValidationHandlers(container);
     });
 
     // Генерация конфига для FTTB
@@ -388,37 +395,29 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
         
         // Определяем текущее устройство (из основного или из выбора филиала)
-        let device = document.getElementById('gpon-device').value;
-        const branchSelect = document.getElementById('gpon-branch');
-        const branchConfigSelect = document.getElementById('gpon-branch-config');
-        const branchValue = branchSelect?.value || 'ural';
-        const isSibBranch = branchValue !== 'ural';
-
-        if (device === 'eltex_lte') {
-            device = document.getElementById('gpon-lte-model')?.value || 'eltex_lte_8x';
-        } else if (isSibBranch && branchConfigSelect && branchConfigSelect.value) {
-            device = branchConfigSelect.value;
-        }
-
-        const service = document.getElementById('gpon-service').value;
-        const ontField = document.getElementById('gpon-ont').value.trim() || '4/2/11';
-        const sn = document.getElementById('gpon-sn').value.trim();
-        const ploam = document.getElementById('gpon-ploam').value.trim();
-        const gponDescription = document.getElementById('gpon-description').value.trim();
-        const lteMac = normalizeMacAddress(document.getElementById('gpon-lte-mac')?.value.trim());
-        const lteMacCompact = getMacCompact(lteMac);
-        const lteDescription = document.getElementById('gpon-lte-description')?.value.trim();
-        const cvid = document.getElementById('gpon-cvid')?.value.trim() || '107';
-        const svid = document.getElementById('gpon-svid')?.value.trim() || '1647';
-        const eltexVpnEnabled = document.getElementById('gpon-eltex-vpn')?.checked;
-        const eltexVpnVlan = document.getElementById('gpon-eltex-vpn-vlan')?.value.trim();
-
-        const isLtpDevice = device === 'eltex_ltp' || device.startsWith('eltex_ltp_');
-        const ontParts = ontField.split('/');
-        const [slot = '4', ponPort = '2', ontIdx = '11'] = ontParts;
-        const frame = '0';
-        const ontIdHuawei = `${frame}/${slot}/${ponPort} ${ontIdx || '11'}`;
-        const ontIdEltex = isLtpDevice ? `${slot}/${ponPort}` : `${slot}/${ponPort}/${ontIdx || '11'}`;
+        const {
+            device,
+            service,
+            ontField,
+            sn,
+            ploam,
+            gponDescription,
+            lteMac,
+            lteMacCompact,
+            lteDescription,
+            cvid,
+            svid,
+            eltexVpnEnabled,
+            eltexVpnVlan,
+            isSibBranch,
+            ontParts,
+            slot,
+            ponPort,
+            ontIdx,
+            frame,
+            ontIdHuawei,
+            ontIdEltex,
+        } = getGponFormState();
 
         let commands = [];
         let multicastCommands = [];
@@ -657,12 +656,45 @@ document.addEventListener('DOMContentLoaded', async function() {
     });
 
     // Обновление диагностики с группировкой и пояснениями
+    function setDiagnosticsHtml(html, key = '') {
+        if (diagnosticsState.key === key && diagnosticsState.html === html) {
+            return;
+        }
+        diagOutput.innerHTML = html;
+        diagnosticsState.html = html;
+        diagnosticsState.key = key;
+    }
+
+    function getDiagnosticsCacheKey(tech, device, portInfo, vlan) {
+        const payload = { tech, device, portInfo, vlan };
+        if (tech === 'adsl') {
+            payload.vpiVci = document.getElementById('adsl-vpivci')?.value.trim() || '';
+        } else if (tech === 'gpon') {
+            payload.electraMac = document.getElementById('gpon-electra-mac')?.value.trim() || '';
+            payload.electraSn = document.getElementById('gpon-electra-sn')?.value.trim() || '';
+            payload.electraSvlan = document.getElementById('gpon-electra-svlan')?.value.trim() || '';
+            payload.lteMac = normalizeMacAddress(document.getElementById('gpon-lte-mac')?.value.trim());
+        }
+        return JSON.stringify(payload);
+    }
+
+    function scheduleDiagnosticsUpdate(tech, device = null, portInfo = null, vlan = null) {
+        if (diagnosticsState.timerId) {
+            clearTimeout(diagnosticsState.timerId);
+        }
+        diagnosticsState.timerId = window.setTimeout(() => {
+            diagnosticsState.timerId = 0;
+            updateDiagnostics(tech, device, portInfo, vlan);
+        }, 16);
+    }
+
     function updateDiagnostics(tech, device = null, portInfo = null, vlan = null) {
         // Получаем диагностику устройства или используем пустой объект
         const deviceDiag = (device && devices[tech]?.[device]?.diagnostics) ? devices[tech][device].diagnostics : null;
+        const cacheKey = getDiagnosticsCacheKey(tech, device, portInfo, vlan);
         
         if (!deviceDiag) {
-            diagOutput.innerHTML = '<div class="diag-empty">Команды диагностики для данного устройства в разработке</div>';
+            setDiagnosticsHtml('<div class="diag-empty">Команды диагностики для данного устройства в разработке</div>', cacheKey);
             return;
         }
 
@@ -1023,7 +1055,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             html += `</div></div>`;
         }
 
-        diagOutput.innerHTML = html;
+        setDiagnosticsHtml(html, cacheKey);
     }
 
     function updateDiagnosticsForTech(tech) {
@@ -1042,11 +1074,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         } else if (tech === 'gpon') {
             device = getGponEffectiveDevice();
             portInfo = document.getElementById('gpon-ont').value || '';
-            updateDiagnostics('gpon', device, portInfo, vlan);
+            scheduleDiagnosticsUpdate('gpon', device, portInfo, vlan);
             return;
         }
 
-        updateDiagnostics(tech, device, portInfo, vlan);
+        scheduleDiagnosticsUpdate(tech, device, portInfo, vlan);
     }
         
     // Обработчики изменения устройства для обновления диагностики и автозаполнения порта
@@ -1078,7 +1110,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         clearConfigOutput();
         const port = normalizeHuaweiAdslPort(portInput.value, this.value);
         const vlan = document.getElementById('adsl-vlan').value || '101';
-        updateDiagnostics('adsl', this.value, port, vlan);
+        scheduleDiagnosticsUpdate('adsl', this.value, port, vlan);
     });
 
     document.getElementById('fttb-device').addEventListener('change', function() {
@@ -1129,7 +1161,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         const portType = document.getElementById('fttb-port-type').value === 'ge' ? 'gigabitethernet' : 'fastethernet';
         const port = portInput.value;
         const vlan = document.getElementById('fttb-access-vlan')?.value || '100';
-        updateDiagnostics('fttb', this.value, { portType, port }, vlan);
+        scheduleDiagnosticsUpdate('fttb', this.value, { portType, port }, vlan);
     });
 
     // Очищаем конфиг при смене типа порта в FTTB
@@ -1204,12 +1236,18 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     function getGponEffectiveDevice() {
         const deviceValue = document.getElementById('gpon-device')?.value || '';
+        const branchValue = document.getElementById('gpon-branch')?.value || 'ural';
+        const configValue = document.getElementById('gpon-branch-config')?.value || '';
+        return resolveGponDevice(deviceValue, branchValue, configValue);
+    }
+
+    function resolveGponDevice(deviceValue, branchValue = 'ural', branchConfigValue = '') {
         if (deviceValue === 'eltex_lte') {
             return document.getElementById('gpon-lte-model')?.value || 'eltex_lte_8x';
         }
-        const branchValue = document.getElementById('gpon-branch')?.value || 'ural';
-        const configValue = document.getElementById('gpon-branch-config')?.value || '';
-        if (branchValue !== 'ural' && configValue) return configValue;
+        if (branchValue !== 'ural' && branchConfigValue) {
+            return branchConfigValue;
+        }
         return deviceValue;
     }
 
@@ -1226,6 +1264,60 @@ document.addEventListener('DOMContentLoaded', async function() {
             .replace(/[^0-9a-fA-F]/g, '')
             .slice(0, 12)
             .toLowerCase();
+    }
+
+    function getGponFormState() {
+        const branchValue = document.getElementById('gpon-branch')?.value || 'ural';
+        const branchConfigValue = document.getElementById('gpon-branch-config')?.value || '';
+        const deviceValue = document.getElementById('gpon-device')?.value || '';
+        const device = resolveGponDevice(deviceValue, branchValue, branchConfigValue);
+        const service = document.getElementById('gpon-service')?.value || 'ims';
+        const ontField = document.getElementById('gpon-ont')?.value.trim() || '4/2/11';
+        const sn = document.getElementById('gpon-sn')?.value.trim() || '';
+        const ploam = document.getElementById('gpon-ploam')?.value.trim() || '';
+        const gponDescription = document.getElementById('gpon-description')?.value.trim() || '';
+        const lteMac = normalizeMacAddress(document.getElementById('gpon-lte-mac')?.value.trim());
+        const lteMacCompact = getMacCompact(lteMac);
+        const lteDescription = document.getElementById('gpon-lte-description')?.value.trim() || '';
+        const cvid = document.getElementById('gpon-cvid')?.value.trim() || '107';
+        const svid = document.getElementById('gpon-svid')?.value.trim() || '1647';
+        const eltexVpnEnabled = document.getElementById('gpon-eltex-vpn')?.checked;
+        const eltexVpnVlan = document.getElementById('gpon-eltex-vpn-vlan')?.value.trim() || '';
+        const isSibBranch = branchValue !== 'ural';
+        const isLtpDevice = device === 'eltex_ltp' || device.startsWith('eltex_ltp_');
+        const ontParts = ontField.split('/');
+        const [slot = '4', ponPort = '2', ontIdx = '11'] = ontParts;
+        const frame = '0';
+        const ontIdHuawei = `${frame}/${slot}/${ponPort} ${ontIdx || '11'}`;
+        const ontIdEltex = isLtpDevice ? `${slot}/${ponPort}` : `${slot}/${ponPort}/${ontIdx || '11'}`;
+
+        return {
+            branchValue,
+            branchConfigValue,
+            deviceValue,
+            device,
+            service,
+            ontField,
+            sn,
+            ploam,
+            gponDescription,
+            lteMac,
+            lteMacCompact,
+            lteDescription,
+            cvid,
+            svid,
+            eltexVpnEnabled,
+            eltexVpnVlan,
+            isSibBranch,
+            isLtpDevice,
+            ontParts,
+            slot,
+            ponPort,
+            ontIdx,
+            frame,
+            ontIdHuawei,
+            ontIdEltex,
+        };
     }
 
     function setDefaultGponOnt(deviceValue) {
@@ -1372,7 +1464,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         clearConfigOutput();
 
         updateGponFields();
-        updateDiagnostics('gpon', effectiveDevice, ontInput.value);
+        scheduleDiagnosticsUpdate('gpon', effectiveDevice, ontInput.value);
     });
 
     const gponLteModelSelect = document.getElementById('gpon-lte-model');
@@ -1381,7 +1473,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             const ontInput = document.getElementById('gpon-ont');
             setDefaultGponOnt(this.value);
             updateGponFields();
-            updateDiagnostics('gpon', this.value, ontInput?.value || '');
+            scheduleDiagnosticsUpdate('gpon', this.value, ontInput?.value || '');
         });
     }
 
@@ -1391,7 +1483,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             const normalized = normalizeMacAddress(this.value);
             if (this.value !== normalized) this.value = normalized;
             if (document.getElementById('gpon-device')?.value === 'eltex_lte') {
-                updateDiagnostics('gpon', getGponEffectiveDevice(), document.getElementById('gpon-ont')?.value || '');
+                scheduleDiagnosticsUpdate('gpon', getGponEffectiveDevice(), document.getElementById('gpon-ont')?.value || '');
             }
         });
     }
@@ -1400,7 +1492,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (gponLteDescriptionField) {
         gponLteDescriptionField.addEventListener('input', () => {
             if (document.getElementById('gpon-device')?.value === 'eltex_lte') {
-                updateDiagnostics('gpon', getGponEffectiveDevice(), document.getElementById('gpon-ont')?.value || '');
+                scheduleDiagnosticsUpdate('gpon', getGponEffectiveDevice(), document.getElementById('gpon-ont')?.value || '');
             }
         });
     }
@@ -1434,7 +1526,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         setDefaultGponOnt(effectiveDevice);
 
         updateGponFields();
-        updateDiagnostics('gpon', effectiveDevice, ontInput.value);
+        scheduleDiagnosticsUpdate('gpon', effectiveDevice, ontInput.value);
     });
 
     // Обработчик выбора конфигурации филиала
@@ -1451,7 +1543,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
 
         updateGponFields();
-        updateDiagnostics('gpon', getGponEffectiveDevice(), ontInput.value);
+        scheduleDiagnosticsUpdate('gpon', getGponEffectiveDevice(), ontInput.value);
     });
 
     // Обновление диагностики Electra при вводе MAC/SN/SVLAN
@@ -1461,7 +1553,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         field.addEventListener('input', () => {
             if (getGponEffectiveDevice() !== 'electra') return;
             const ontInput = document.getElementById('gpon-ont');
-            updateDiagnostics('gpon', 'electra', ontInput?.value || '');
+            scheduleDiagnosticsUpdate('gpon', 'electra', ontInput?.value || '');
         });
     });
 
@@ -1489,9 +1581,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         const branchValue = document.getElementById('gpon-branch')?.value || 'ural';
         const configValue = document.getElementById('gpon-branch-config')?.value || '';
         const isSibBranch = branchValue !== 'ural';
-        const effectiveDevice = deviceValue === 'eltex_lte'
-            ? (document.getElementById('gpon-lte-model')?.value || 'eltex_lte_8x')
-            : (isSibBranch && configValue ? configValue : deviceValue);
+        const effectiveDevice = resolveGponDevice(deviceValue, branchValue, configValue);
 
         // Hide all by default
         gponForm?.classList.remove('gpon-ural');
@@ -2127,135 +2217,75 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Инициализация обработчиков валидации для динамически созданных
 // полей
-    function initValidationHandlers() {
+    function bindBlurValidation(input, validator) {
+        if (!input || input.dataset.validationBound === 'true') return;
+        input.dataset.validationBound = 'true';
+        input.addEventListener('blur', function() {
+            const result = validator(this);
+            if (result.valid) {
+                showFieldValid(this);
+            } else {
+                showFieldError(this, result.error);
+            }
+        });
+    }
+
+    function getScopedElement(scope, selector) {
+        if (!scope) return null;
+        if (typeof scope.getElementById === 'function' && selector.startsWith('#')) {
+            return scope.getElementById(selector.slice(1));
+        }
+        return scope.querySelector(selector);
+    }
+
+    function initValidationHandlers(scope = document) {
         // ADSL поля
-        const adslPort = document.getElementById('adsl-port');
-        const adslVpiVci = document.getElementById('adsl-vpivci');
-        const adslVlan = document.getElementById('adsl-vlan');
-        const adslMcastVlan = document.getElementById('adsl-mcast-vlan');
+        const adslPort = getScopedElement(scope, '#adsl-port');
+        const adslVpiVci = getScopedElement(scope, '#adsl-vpivci');
+        const adslVlan = getScopedElement(scope, '#adsl-vlan');
+        const adslMcastVlan = getScopedElement(scope, '#adsl-mcast-vlan');
 
-        if (adslPort) {
-            adslPort.addEventListener('blur', function() {
-                const device = document.getElementById('adsl-device')?.value;
-                const result = validateAdslPort(this.value, device);
-                if (result.valid) {
-                    showFieldValid(this);
-                } else {
-                    showFieldError(this, result.error);
-                }
-            });
-        }
+        bindBlurValidation(adslPort, (input) => validateAdslPort(input.value, document.getElementById('adsl-device')?.value));
 
-        if (adslVpiVci) {
-            adslVpiVci.addEventListener('blur', function() {
-                const result = validateSlashPair(this.value, 'VPI/VCI');
-                if (result.valid) {
-                    showFieldValid(this);
-                } else {
-                    showFieldError(this, result.error);
-                }
-            });
-        }
+        bindBlurValidation(adslVpiVci, (input) => validateSlashPair(input.value, 'VPI/VCI'));
 
-        if (adslVlan) {
-            adslVlan.addEventListener('blur', function() {
-                const result = validateNumber(this.value, 'VLAN ID', 1, 4094);
-                if (result.valid) {
-                    showFieldValid(this);
-                } else {
-                    showFieldError(this, result.error);
-                }
-            });
-        }
-        if (adslMcastVlan) {
-            adslMcastVlan.addEventListener('blur', function() {
-                if (!this.value || !this.value.trim()) {
-                    showFieldValid(this);
-                    return;
-                }
-                const result = validateNumber(this.value, 'Multicast VLAN', 1, 4094);
-                if (result.valid) {
-                    showFieldValid(this);
-                } else {
-                    showFieldError(this, result.error);
-                }
-            });
-        }
+        bindBlurValidation(adslVlan, (input) => validateNumber(input.value, 'VLAN ID', 1, 4094));
+        bindBlurValidation(adslMcastVlan, (input) => {
+            if (!input.value || !input.value.trim()) {
+                return { valid: true };
+            }
+            return validateNumber(input.value, 'Multicast VLAN', 1, 4094);
+        });
 
         // FTTB порт
-        const fttbPort = document.getElementById('fttb-port');
-        if (fttbPort) {
-            fttbPort.addEventListener('blur', function() {
-                const device = document.getElementById('fttb-device')?.value;
-                const result = validateFttbPort(this.value, device);
-                if (result.valid) {
-                    showFieldValid(this);
-                } else {
-                    showFieldError(this, result.error);
-                }
-            });
-        }
+        const fttbPort = getScopedElement(scope, '#fttb-port');
+        bindBlurValidation(fttbPort, (input) => validateFttbPort(input.value, document.getElementById('fttb-device')?.value));
 
         // Динамические FTTB VLAN поля
-        const accessVlan = document.getElementById('fttb-access-vlan');
-        const trunkVlans = document.getElementById('fttb-trunk-vlans');
-        const nativeVlan = document.getElementById('fttb-native-vlan');
-        const tr069Vlan = document.getElementById('fttb-tr069-vlan');
-        const pppoeVlan = document.getElementById('fttb-pppoe-vlan');
-        const taggedVlan = document.getElementById('fttb-tagged-vlan');
+        const accessVlan = getScopedElement(scope, '#fttb-access-vlan');
+        const trunkVlans = getScopedElement(scope, '#fttb-trunk-vlans');
+        const nativeVlan = getScopedElement(scope, '#fttb-native-vlan');
+        const tr069Vlan = getScopedElement(scope, '#fttb-tr069-vlan');
+        const pppoeVlan = getScopedElement(scope, '#fttb-pppoe-vlan');
+        const taggedVlan = getScopedElement(scope, '#fttb-tagged-vlan');
 
         // Инициализация обработчиков для существующих
 // полей
         [accessVlan, nativeVlan, tr069Vlan, pppoeVlan, taggedVlan].forEach(field => {
-            if (field) {
-                field.addEventListener('blur', function() {
-                    const fieldName = this.previousElementSibling?.textContent || 'VLAN';
-                    const result = validateNumber(this.value, fieldName, 1, 4094);
-                    if (result.valid) {
-                        showFieldValid(this);
-                    } else {
-                        showFieldError(this, result.error);
-                    }
-                });
-            }
+            bindBlurValidation(field, (input) => {
+                const fieldName = input.previousElementSibling?.textContent || 'VLAN';
+                return validateNumber(input.value, fieldName, 1, 4094);
+            });
         });
 
-        if (trunkVlans) {
-            trunkVlans.addEventListener('blur', function() {
-                const result = validateVlanList(this.value, 'Allowed VLANs');
-                if (result.valid) {
-                    showFieldValid(this);
-                } else {
-                    showFieldError(this, result.error);
-                }
-            });
-        }
+        bindBlurValidation(trunkVlans, (input) => validateVlanList(input.value, 'Allowed VLANs'));
 
         // GPON поля
-        const gponOnt = document.getElementById('gpon-ont');
-        const gponVlan = document.getElementById('gpon-vlan');
+        const gponOnt = getScopedElement(scope, '#gpon-ont');
+        const gponVlan = getScopedElement(scope, '#gpon-vlan');
 
-        if (gponOnt) {
-            gponOnt.addEventListener('blur', function() {
-                const result = validatePort(this.value, 'ONT ID');
-                if (result.valid) {
-                    showFieldValid(this);
-                } else {
-                    showFieldError(this, result.error);
-                }
-            });
-        }
-
-        if (gponVlan) {
-            gponVlan.addEventListener('blur', function() {
-                const result = validateNumber(this.value, 'VLAN', 1, 4094);
-                if (result.valid) {
-                    showFieldValid(this);
-                } else {
-                    showFieldError(this, result.error);
-                }
-            });
-        }
+        bindBlurValidation(gponOnt, (input) => validatePort(input.value, 'ONT ID'));
+        bindBlurValidation(gponVlan, (input) => validateNumber(input.value, 'VLAN', 1, 4094));
     }
 
     // Функции валидации
@@ -2572,9 +2602,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         } else if (tech === 'gpon') {
             const gponOnt = document.getElementById('gpon-ont');
-            let lteDevice = document.getElementById('gpon-device')?.value || '';
-            if (lteDevice === 'eltex_lte') {
-                lteDevice = document.getElementById('gpon-lte-model')?.value || 'eltex_lte_8x';
+            const { device: gponDevice, branchValue, branchConfigValue } = getGponFormState();
+            let lteDevice = gponDevice;
+            if (lteDevice === 'eltex_lte_8x' || lteDevice === 'eltex_lte_4x') {
                 const lteMacField = document.getElementById('gpon-lte-mac');
                 const lteDescriptionField = document.getElementById('gpon-lte-description');
                 const normalizedMac = normalizeMacAddress(lteMacField?.value || '');
@@ -2605,19 +2635,15 @@ document.addEventListener('DOMContentLoaded', async function() {
                     showFieldError(gponOnt, 'GPON ID не может быть пустым');
                     isValid = false;
                 } else {
-                    let device = document.getElementById('gpon-device')?.value || '';
-                    const branchValue = document.getElementById('gpon-branch')?.value || 'ural';
+                    let device = gponDevice;
                     const branchConfigSelect = document.getElementById('gpon-branch-config');
 
-                    if (device === 'eltex_lte') {
-                        device = document.getElementById('gpon-lte-model')?.value || 'eltex_lte_8x';
-                    } else if (branchValue !== 'ural') {
-                        if (!branchConfigSelect?.value) {
+                    if (branchValue !== 'ural' && device !== 'eltex_lte_8x' && device !== 'eltex_lte_4x') {
+                        if (!branchConfigValue) {
                             showFieldError(branchConfigSelect, '\u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u043a\u043e\u043d\u0444\u0438\u0433\u0443\u0440\u0430\u0446\u0438\u044e \u0434\u043b\u044f \u0444\u0438\u043b\u0438\u0430\u043b\u0430');
                             isValid = false;
                         } else {
                             showFieldValid(branchConfigSelect);
-                            device = branchConfigSelect.value;
                         }
                     }
 
