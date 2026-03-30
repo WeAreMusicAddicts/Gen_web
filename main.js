@@ -1670,6 +1670,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     // Копирование конфига в буфер обмена
+    function prepareClipboardText(text) {
+        const normalized = String(text || '').replace(/\r?\n/g, '\r\n').trimEnd();
+        return normalized ? `${normalized}\r\n` : '';
+    }
+
     document.getElementById('copy-all').addEventListener('click', () => {
         let text = configOutput.textContent || '';
         if (mcastSection && !mcastSection.classList.contains('hidden')) {
@@ -1678,7 +1683,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 text = `${text.trimEnd()}\n\n! ===== МУЛЬТИКАСТ =====\n${mcastText}`;
             }
         }
-        navigator.clipboard.writeText(text).then(() => {
+        navigator.clipboard.writeText(prepareClipboardText(text)).then(() => {
             showNotification('Конфиг скопирован в буфер обмена!');
         }).catch(() => {
             showNotification('Ошибка копирования. Попробуйте выделить текст вручную.', 'error');
@@ -1688,7 +1693,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Копирование для ADSL
     document.getElementById('copy-adsl').addEventListener('click', () => {
         const text = configOutput.textContent;
-        navigator.clipboard.writeText(text).then(() => {
+        navigator.clipboard.writeText(prepareClipboardText(text)).then(() => {
             showNotification('Конфиг ADSL скопирован!');
         });
     });
@@ -1696,7 +1701,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Копирование для FTTB
     document.getElementById('copy-fttb').addEventListener('click', () => {
         const text = configOutput.textContent;
-        navigator.clipboard.writeText(text).then(() => {
+        navigator.clipboard.writeText(prepareClipboardText(text)).then(() => {
             showNotification('Конфиг FTTB скопирован!');
         });
     });
@@ -1710,7 +1715,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 text = `${text.trimEnd()}\n\n! ===== МУЛЬТИКАСТ =====\n${mcastText}`;
             }
         }
-        navigator.clipboard.writeText(text).then(() => {
+        navigator.clipboard.writeText(prepareClipboardText(text)).then(() => {
             showNotification('Конфиг GPON скопирован!');
         });
     });
@@ -2101,7 +2106,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     window.copyCommandFromElement = function(element) {
         const command = element.getAttribute('data-command');
         if (command) {
-            navigator.clipboard.writeText(command).then(() => {
+            navigator.clipboard.writeText(prepareClipboardText(command)).then(() => {
                 showNotification('Команда скопирована!');
             }).catch(() => {
                 showNotification('Ошибка копирования', 'error');
