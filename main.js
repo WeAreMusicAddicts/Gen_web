@@ -52,6 +52,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     const defaultPorts = {
         // Huawei
         huawei: '1/1/1',
+        huawei_5616: '0/1',
         electra: '0/1/26',
         iskratel_mwgl0s92: '0/1',
         // Уральский филиал
@@ -105,6 +106,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     const huaweiAdslDevices = new Set([
         'huawei_5600',
+        'huawei_5616',
         'huawei_5600_vdsl',
         'huawei_58xx_vdsl',
         'huawei_5605',
@@ -2413,6 +2415,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             'alcatel_7330',
             'alcatel_7324',
             'huawei_5600',
+            'huawei_5616',
             'huawei_5600_vdsl',
             'huawei_58xx_vdsl',
             'huawei_5605',

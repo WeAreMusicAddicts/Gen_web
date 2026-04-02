@@ -798,6 +798,75 @@ vdsl2 snrmargin-prf <PROF_NAME>`, description: "Смена профиля SNR" }
       ],
     },
   },
+  huawei_5616: {
+    label: "Huawei 5616",
+    services: {
+      pppoe: ({ port, vlan, vpi, vci }) => [
+        `enable`,
+        `undo smart`,
+        `undo interactive`,
+        `config`,
+        `service-port vlan ${vlan} adsl ${port} vpi ${vpi} vci ${vci} rx-cttr 6 tx-cttr 6`,
+        `return`,
+      ],
+      iptv: ({ port, vlan, vpi, vci, mcastVlan = vlan }) => [
+        `enable`,
+        `undo smart`,
+        `undo interactive`,
+        `config`,
+        `service-port vlan ${vlan} adsl ${port} vpi ${vpi} vci ${vci} single-service tag-transform default inbound traffic-table index 7 outbound traffic-table index 7`,
+        `btv`,
+        `! Найдите свободный igmp user index:`,
+        `display current-configuration section btv`,
+        `! Найдите service-port index для порта:`,
+        `display service-port port ${port}`,
+        `igmp user add <IGMP_USER_INDEX> service-port <SERVICE_PORT_INDEX> max-program 5`,
+        `multicast-vlan ${mcastVlan}`,
+        `igmp multicast-vlan member <IGMP_USER_INDEX>`,
+        `return`,
+      ],
+    },
+    diagnostics: {
+      "Состояние DSLAM": [
+        { command: `display sysuptime`, description: "Время работы DSLAM" },
+        { command: `display board 0`, description: "Состояние платы" },
+      ],
+      "Состояние порта": [
+        { command: `display interface adsl {port}`, description: "Состояние порта" },
+        { command: `display line operation port {port}`, description: "Состояние порта" },
+        { command: `display line operation board {port}`, description: "Состояние порта" },
+        { command: `display traffic {port}`, description: "Трафик порта" },
+      ],
+      "Работа с профилями": [
+        { command: `display adsl line-profile`, description: "Просмотр всех профилей" },
+      ],
+      "Смена профиля": [
+        { command: `config\ninterface adsl 0/{slot}\nextline-config {portNum} profile-index 1\ndeactivate {portNum}\nactivate {portNum} profile-index <PROF_INDEX>\nquit\nreturn`, description: "Смена профиля" },
+      ],
+      "Работа с VLAN": [
+        { command: `display vlan desc 1-4093`, description: "Просмотр настроенных VLAN" },
+        { command: `display vlan all`, description: "Просмотр всех VLAN" },
+      ],
+      "Работа с PVC": [
+        { command: `display service-port port {port}`, description: "Просмотр настроенных service-port" },
+        { command: `config\nundo service-port port {port} vpi {vpi} vci {vci}`, description: "Удаление PVC по VPI/VCI" },
+        { command: `config\nundo service-port port {port} vlan {vlan}`, description: "Удаление PVC по VLAN" },
+        { command: `config\ninterface adsl {slot}\natm-ping {portNum} {vpi} {vci}\nquit\nreturn`, description: "Тест PVC" },
+      ],
+      "Работа с MAC": [
+        { command: `display mac-address port {port}`, description: "Просмотр MAC на порту" },
+      ],
+      "Работа с multicast": [
+        { command: `display igmp user port {port}`, description: "Просмотр подписок" },
+        { command: `display current-configuration section btv`, description: "Поиск свободного IGMP user index" },
+        { command: `display service-port port {port}`, description: "Поиск service-port index для порта" },
+      ],
+      "SNMP": [
+        { command: `undo snmp-agent community com162-RO\nundo snmp-agent community inity2016`, description: "Отключение SNMP" },
+        { command: `snmp-agent community read com162-RO\nsnmp-agent community read inity2016`, description: "Включение SNMP" },
+      ],
+    },
+  },
   sib_templates: {
     label: "Сибирь: шаблоны (из файла)",
     services: {},
