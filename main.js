@@ -741,6 +741,22 @@ document.addEventListener('DOMContentLoaded', async function() {
                     out = out.replace(/{port}/g, portInfo || '{port}');
                 }
                 // Для Huawei 5605 нужны slot и portNum отдельно
+                else if (device === 'huawei_5616' && portInfo) {
+                    const parts = String(portInfo).split('/').filter(Boolean);
+                    const vpiVciRaw = document.getElementById('adsl-vpivci')?.value.trim() || '0/35';
+                    const [vpi = '0', vci = '35'] = vpiVciRaw.split('/').map(v => v.trim());
+                    const slot = parts.length === 3 ? parts[1] : (parts[0] || '');
+                    const portNum = parts.length === 3 ? parts[2] : (parts[1] || '');
+                    if (slot && portNum) {
+                        out = out.replace(/{slot}/g, slot);
+                        out = out.replace(/{portNum}/g, portNum);
+                        out = out.replace(/{vpi}/g, vpi).replace(/{vci}/g, vci);
+                        out = out.replace(/{port}/g, portInfo);
+                    } else {
+                        out = out.replace(/{slot}/g, '{slot}').replace(/{portNum}/g, '{portNum}');
+                        out = out.replace(/{port}/g, portInfo || '{port}');
+                    }
+                }
                 else if (device === 'huawei_5605' && portInfo) {
                     const parts = String(portInfo).split('/').filter(Boolean);
                     const portNum = parts.length ? parts[parts.length - 1] : '';
