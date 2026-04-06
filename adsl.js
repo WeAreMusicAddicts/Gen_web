@@ -166,7 +166,7 @@ oam loopback {portNum} {vpi} {vci} end-loopback 3`, description: "PVC test via O
         const [slot, portNum] = port.split('/');
         return [
           `configure terminal`,
-          `interface vdsl_${slot}/${portNum}`,
+          `interface vdsl_1/${slot}/${portNum}`,
           `no shutdown`,
           `switchport mode hybrid`,
           `no switchport default vlan pvc 2`,
@@ -175,7 +175,7 @@ oam loopback {portNum} {vpi} {vci} end-loopback 3`, description: "PVC test via O
           `pvc 2 enable`,
           `mvlan-translate ${vlan} to untag pvc 2`,
           `exit`,
-          `igmp mvlan ${vlan} receive-port vdsl_${slot}/${portNum} pvc 2`,
+          `igmp mvlan ${vlan} receive-port vdsl_1/${slot}/${portNum} pvc 2`,
           `exit`,
           `write`,
         ];
@@ -184,7 +184,7 @@ oam loopback {portNum} {vpi} {vci} end-loopback 3`, description: "PVC test via O
         const [slot, portNum] = port.split('/');
         return [
           `configure terminal`,
-          `interface vdsl_${slot}/${portNum}`,
+          `interface vdsl_1/${slot}/${portNum}`,
           `no shutdown`,
           `switchport mode hybrid`,
           `no switchport default vlan pvc 1`,
@@ -199,9 +199,9 @@ oam loopback {portNum} {vpi} {vci} end-loopback 3`, description: "PVC test via O
     },
     diagnostics: {
       "Состояние порта": [
-        { command: `show interface vdsl_{slot}/{portNum}`, description: "нформация об интерфейсе" },
-        { command: `show vdsl2 port-status vdsl_{slot}/{portNum}`, description: "Статус VDSL2 порта" },
-        { command: `show vdsl2 port-status vdsl_{slot}/1-64`, description: "Статус всех портов на плате" },
+        { command: `show interface vdsl_1/{slot}/{portNum}`, description: "Информация об интерфейсе" },
+        { command: `show vdsl2 port-status vdsl_1/{slot}/{portNum}`, description: "Статус VDSL2 порта" },
+        { command: `show vdsl2 port-status vdsl_1/{slot}/1-64`, description: "Статус всех портов на плате" },
       ],
       "Работа с профилями": [
         { command: `show vdsl2 snrmargin-prf`, description: "Просмотр SNR профилей" },
@@ -209,7 +209,7 @@ oam loopback {portNum} {vpi} {vci} end-loopback 3`, description: "PVC test via O
       ],
       "Смена профиля": [
         { command: `configure terminal
-interface vdsl_{slot}/{portNum}
+interface vdsl_1/{slot}/{portNum}
 vdsl2 snrmargin-prf <PROF_NAME>`, description: "Смена профиля SNR" },
       ],
       "Работа с VLAN": [
@@ -217,13 +217,13 @@ vdsl2 snrmargin-prf <PROF_NAME>`, description: "Смена профиля SNR" }
         { command: `show vlan {vlan}`, description: "Просмотр конкретного VLAN" },
       ],
       "Работа с MAC": [
-        { command: `show mac dsl vdsl_{slot}/{portNum}`, description: "MAC на DSL порту" },
+        { command: `show mac dsl vdsl_1/{slot}/{portNum}`, description: "MAC на DSL порту" },
         { command: `show mac vlan {vlan}`, description: "MAC во VLAN" },
         { command: `show mac slot {slot}`, description: "MAC на слоте" },
       ],
       "Работа с конфигурацией": [
         { command: `show running-config`, description: "Текущая конфигурация" },
-        { command: `show running-config interface vdsl_{slot}/{portNum}`, description: "Конфигурация интерфейса" },
+        { command: `show running-config interface vdsl_1/{slot}/{portNum}`, description: "Конфигурация интерфейса" },
         { command: `write`, description: "Сохранение конфигурации" },
       ],
     },
