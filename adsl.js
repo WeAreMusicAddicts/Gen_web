@@ -344,6 +344,7 @@ vdsl2 snrmargin-prf <PROF_NAME>`, description: "Смена профиля SNR" }
           `set vlan interface dsl${portNum}:${vpi}_${vci} ingress enable`,
           `set vlan pvid interface dsl${portNum}:${vpi}_${vci} vid ${vlan} mode untagged`,
           `set igmp interface dsl${portNum}:${vpi}_${vci} state member acl mode deny`,
+          `set igmp interface dsl${portNum}:${vpi}_${vci} state member limit 1`,
           `set bridge qos queues egress enable interface dsl${portNum}:${vpi}_${vci}`,
         ];
       },
