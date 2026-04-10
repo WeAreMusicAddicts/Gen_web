@@ -334,8 +334,25 @@ vdsl2 snrmargin-prf <PROF_NAME>`, description: "Смена профиля SNR" }
   iskratel: {
     label: "Iskratel MSAN",
     services: {
-      iptv: ({ port, vlan, vpi, vci }) => {
+      iptv: ({ port, vlan, vpi, vci, iptvMode = 'tf' }) => {
         const portNum = port.includes('/') ? port.split('/')[1] : port;
+
+        if (iptvMode === 'ef') {
+          return [
+            `add interface dsl${portNum}:${vpi}_${vci}`,
+            `set interface dsl${portNum}:${vpi}_${vci} enable`,
+            `set vlan pvid interface dsl${portNum}:${vpi}_${vci} vid ${vlan} mode untagged`,
+            `set vlan interface dsl${portNum}:${vpi}_${vci} ingress enable`,
+            `set bridge ccx between dsl${portNum}:${vpi}_${vci} fasteth1`,
+            `add vlan member interface dsl${portNum}:${vpi}_${vci} vid ${vlan} ingress enable tag remove`,
+            `set igmp interface dsl${portNum}:${vpi}_${vci} state member`,
+            `set atm vc tp dsl${portNum}:${vpi}_${vci} qos_profile IPTV_8M/896k`,
+            `set bridge qos profile Strict_for_IPTV interface dsl${portNum}:${vpi}_${vci}`,
+            `set bridge qos queues egress enable interface dsl${portNum}:${vpi}_${vci}`,
+            `set bridge qos interface dsl${portNum}:${vpi}_${vci} trust cos`,
+          ];
+        }
+
         return [
           `add interface dsl${portNum}:${vpi}_${vci}`,
           `set interface dsl${portNum}:${vpi}_${vci} enable`,

@@ -123,6 +123,65 @@ document.addEventListener('DOMContentLoaded', async function() {
         return port;
     }
 
+    function updateAdslSpecialFields(deviceValue = document.getElementById('adsl-device')?.value, serviceValue = document.getElementById('adsl-service')?.value) {
+        const serviceGroup = document.getElementById('adsl-service-group');
+        const serviceSelect = document.getElementById('adsl-service');
+        const tplGroup = document.getElementById('adsl-sib-template-group');
+        const extraGroup = document.getElementById('adsl-sib-extra-group');
+        const mcastGroup = document.getElementById('adsl-mcast-vlan-group');
+        const isIskratel = deviceValue === 'iskratel';
+
+        if (serviceSelect) {
+            const options = isIskratel
+                ? [
+                    { value: 'pppoe', text: 'PPPoE (Интернет)' },
+                    { value: 'iptv_tf', text: 'IP-TV (ТФ)' },
+                    { value: 'iptv_ef', text: 'IP-TV (ЕФ)' },
+                ]
+                : [
+                    { value: 'pppoe', text: 'PPPoE (Интернет)' },
+                    { value: 'iptv_tf', text: 'IP-TV (Мультисервис)' },
+                ];
+
+            const currentSignature = Array.from(serviceSelect.options)
+                .map(option => `${option.value}:${option.text}`)
+                .join('|');
+            const nextSignature = options
+                .map(option => `${option.value}:${option.text}`)
+                .join('|');
+
+            if (currentSignature !== nextSignature) {
+                const nextValue = options.some(option => option.value === serviceValue)
+                    ? serviceValue
+                    : serviceValue === 'iptv_ef'
+                        ? 'iptv_tf'
+                        : 'pppoe';
+                serviceSelect.innerHTML = options
+                    .map(option => `<option value="${option.value}">${option.text}</option>`)
+                    .join('');
+                serviceSelect.value = nextValue;
+                serviceValue = nextValue;
+            }
+        }
+
+        if (deviceValue === 'sib_templates') {
+            serviceGroup?.classList.add('hidden');
+            tplGroup?.classList.remove('hidden');
+            mcastGroup?.classList.add('hidden');
+            return;
+        }
+
+        serviceGroup?.classList.remove('hidden');
+        tplGroup?.classList.add('hidden');
+        extraGroup?.classList.add('hidden');
+
+        if (huaweiAdslDevices.has(deviceValue)) {
+            mcastGroup?.classList.remove('hidden');
+        } else {
+            mcastGroup?.classList.add('hidden');
+        }
+    }
+
     // Функция очистки вывода конфига
     function clearConfigOutput() {
         configOutput.textContent = '// Выберите технологию, заполните поля и нажмите "Сгенерировать"';
@@ -178,7 +237,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
         
         const device = document.getElementById('adsl-device').value;
-        const service = document.getElementById('adsl-service').value === 'pppoe' ? 'pppoe' : 'iptv';
+        const serviceValue = document.getElementById('adsl-service').value;
+        const service = serviceValue === 'pppoe' ? 'pppoe' : 'iptv';
         const rawPort = document.getElementById('adsl-port').value.trim() || '0/1';
         const port = normalizeHuaweiAdslPort(rawPort, device);
         const vpiVciRaw = document.getElementById('adsl-vpivci').value.trim() || '0/35';
@@ -187,6 +247,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         const mcastVlanInput = document.getElementById('adsl-mcast-vlan');
         const mcastVlanRaw = mcastVlanInput?.value.trim() || '';
         const mcastVlan = mcastVlanRaw || vlan;
+        const iskratelIptvMode = serviceValue === 'iptv_ef' ? 'ef' : 'tf';
 
         if (device === 'sib_templates') {
             const tplId = document.getElementById('adsl-sib-template')?.value;
@@ -219,7 +280,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // Проверяем, существует ли устройство и его сервисы
         if (devices.adsl[device]?.services?.[service]) {
-            commands = commands.concat(devices.adsl[device].services[service]({ port, vlan, vpi, vci, mcastVlan }));
+            commands = commands.concat(devices.adsl[device].services[service]({ port, vlan, vpi, vci, mcastVlan, iptvMode: iskratelIptvMode }));
         } else {
             commands.push(`! Шаблон для ${device} (${service}) не найден.`);
             commands.push(`! Проверьте базу команд или используйте общий шаблон:`);
@@ -1103,24 +1164,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     document.getElementById('adsl-device').addEventListener('change', function() {
         // Автозаполнение порта
         const portInput = document.getElementById('adsl-port');
-        const serviceGroup = document.getElementById('adsl-service-group');
-        const tplGroup = document.getElementById('adsl-sib-template-group');
-        const extraGroup = document.getElementById('adsl-sib-extra-group');
-        const mcastGroup = document.getElementById('adsl-mcast-vlan-group');
-        if (this.value === 'sib_templates') {
-            serviceGroup?.classList.add('hidden');
-            tplGroup?.classList.remove('hidden');
-            mcastGroup?.classList.add('hidden');
-        } else {
-            serviceGroup?.classList.remove('hidden');
-            tplGroup?.classList.add('hidden');
-            extraGroup?.classList.add('hidden');
-            if (huaweiAdslDevices.has(this.value)) {
-                mcastGroup?.classList.remove('hidden');
-            } else {
-                mcastGroup?.classList.add('hidden');
-            }
-        }
+        updateAdslSpecialFields(this.value, document.getElementById('adsl-service')?.value);
         if (defaultPorts[this.value]) {
             portInput.value = defaultPorts[this.value];
         }
@@ -1129,6 +1173,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         const port = normalizeHuaweiAdslPort(portInput.value, this.value);
         const vlan = document.getElementById('adsl-vlan').value || '101';
         scheduleDiagnosticsUpdate('adsl', this.value, port, vlan);
+    });
+
+    document.getElementById('adsl-service')?.addEventListener('change', function() {
+        updateAdslSpecialFields(document.getElementById('adsl-device')?.value, this.value);
     });
 
     document.getElementById('fttb-device').addEventListener('change', function() {
@@ -2708,20 +2756,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     initValidationHandlers(); // Инициализация обработчиков валидации
     initSibTemplateSelects();
     const adslDeviceInit = document.getElementById('adsl-device');
-    const adslServiceGroup = document.getElementById('adsl-service-group');
-    const adslTplGroup = document.getElementById('adsl-sib-template-group');
-    const adslMcastGroup = document.getElementById('adsl-mcast-vlan-group');
-    if (adslDeviceInit?.value === 'sib_templates') {
-        adslServiceGroup?.classList.add('hidden');
-        adslTplGroup?.classList.remove('hidden');
-        adslMcastGroup?.classList.add('hidden');
-    } else if (adslDeviceInit?.value) {
-        if (huaweiAdslDevices.has(adslDeviceInit.value)) {
-            adslMcastGroup?.classList.remove('hidden');
-        } else {
-            adslMcastGroup?.classList.add('hidden');
-        }
-    }
+    updateAdslSpecialFields(adslDeviceInit?.value, document.getElementById('adsl-service')?.value);
     const fttbDeviceInit = document.getElementById('fttb-device');
     const fttbModeGroup = document.getElementById('fttb-mode-group');
     const fttbVlanFields = document.getElementById('fttb-vlan-fields');
