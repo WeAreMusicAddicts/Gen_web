@@ -497,6 +497,9 @@ vdsl2 snrmargin-prf <PROF_NAME>`, description: "Смена профиля SNR" }
         { command: `slot {slot}`, description: "Вход в слот" },
         { command: `port show profile dsl {portNum}`, description: "Просмотр профиля порта" },
       ],
+      "Смена профиля": [
+        { command: `slot {slot}\nport disable dsl {portNum}\nport profile <PROF_NAME> dsl {portNum}\nport enable dsl {portNum}\nexit\nsave config`, description: "Смена профиля по имени" },
+      ],
       "Работа с VLAN": [
         { command: `dslam l2 vlan show`, description: "Просмотр VLAN" },
         { command: `slot {slot}`, description: "Вход в слот" },
