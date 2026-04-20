@@ -54,6 +54,9 @@ window.adslDevices = {
         { command: `show vlan name`, description: "Список VLAN" },
         { command: `info configure bridge port 1/1/{port}:{vpi}:{vci}`, description: "Конфиг PVC" },
       ],
+      "Удаление PVC": [
+        { command: `configure atm no pvc 1/1/{port}:{vpi}:{vci}`, description: "Удалить PVC" },
+      ],
       "Работа с МАС": [
         { command: `show vlan bridge-port-fdb 1/1/{port}:{vpi}:{vci}`, description: "MAC в PVC" },
         { command: `show vlan fdb {vlan}`, description: "MAC во VLAN" },
