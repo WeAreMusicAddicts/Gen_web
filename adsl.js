@@ -46,6 +46,9 @@ window.adslDevices = {
       "Смена профиля": [
         { command: `configure xdsl line 1/1/{port} spectrum-profile name: {spectrumProfile} service-profile name: {serviceProfile} admin-up`, description: "Сменить профиль" },
       ],
+      "Работа с PVC": [
+        { command: `configure atm no pvc ${pvcPath}`, description: "Удалить PVC" },
+      ],
       "Другое": [
         { command: `admin alarm clr-logging`, description: "Очистит историю логов" },
         { command: `show alarm log xdsl misc`, description: "Просмотр логов" },
