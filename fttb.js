@@ -912,13 +912,30 @@ virtual-cable-test`, description: "Диагностика кабеля" },
         { command: `clear counters interface ethernet {port}`, description: "Сброс счетчиков порта" },
       ],
       "Конфигурация": [
+        { command: `show running-config`, description: "Текущая конфигурация" },
         { command: `show running-config interface Ethernet{port}`, description: "Текущая конфигурация порта" },
+        { command: `show switchport interface ethernet {port}`, description: "Режим и VLAN-параметры порта" },
       ],
       "VLAN": [
         { command: `show vlan`, description: "Список VLAN" },
       ],
       "MAC-таблица": [
+        { command: `show mac-address-table`, description: "Вся MAC-таблица" },
         { command: `show mac-address-table interface ethernet {port}`, description: "MAC-адреса на порту" },
+        { command: `show mac-address-table vlan {vlan}`, description: "MAC-адреса внутри VLAN" },
+      ],
+      "Multicast": [
+        { command: `show ip igmp snooping`, description: "Общий статус IGMP Snooping" },
+        { command: `show ip igmp snooping vlan {vlan}`, description: "IGMP Snooping в VLAN" },
+      ],
+      "Логи": [
+        { command: `show logging buffered`, description: "Просмотр логов" },
+      ],
+      "Сохранение": [
+        { command: `write`, description: "Сохранить конфигурацию" },
+      ],
+      "Cable Diagnostic": [
+        { command: `virtual-cable-test interface ethernet {port}`, description: "Диагностика кабеля" },
       ],
     },
   },
