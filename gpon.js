@@ -161,6 +161,40 @@ window.gponDevices = {
         { command: `show profile cross-connect`, description: "Список профилей cross-connect" },
         { command: `show profile dba`, description: "Список профилей dba" },
       ],
+      "Address-table: создание профиля для одного s-vlan": [
+        {
+          command: `configure terminal
+profile address-table <PROFILE_NAME>
+s-vlan <S_VLAN_1> use c-vlan
+exit
+do commit
+do confirm`,
+          description: "",
+        },
+      ],
+      "Address-table: назначение профиля на gpon-port": [
+        {
+          command: `configure terminal
+interface gpon-port <GPON_PORT>
+profile address-table <PROFILE_NAME>
+do commit
+do confirm`,
+          description: "",
+        },
+      ],
+      "Address-table: несколько s-vlan (IMS/vIMS)": [
+        {
+          command: `configure terminal
+profile address-table "<PROFILE_NAME>"
+s-vlan <S_VLAN_1> use c-vlan
+s-vlan <S_VLAN_2> use c-vlan
+s-vlan <S_VLAN_3> use c-vlan
+exit
+do commit
+do confirm`,
+          description: "",
+        },
+      ],
       "Алармы": [
         { command: `show ont alarms {ontId}`, description: "Алармы на ONT" },
       ],
@@ -224,6 +258,40 @@ window.gponDevices = {
       ],
       "MAC-таблица": [
         { command: `show mac interface ont {ontId}`, description: "MAC-адреса на ONT" },
+      ],
+      "Address-table: создание профиля для одного s-vlan": [
+        {
+          command: `configure terminal
+profile address-table <PROFILE_NAME>
+s-vlan <S_VLAN_1> use c-vlan
+exit
+do commit
+do confirm`,
+          description: "",
+        },
+      ],
+      "Address-table: назначение профиля на gpon-port": [
+        {
+          command: `configure terminal
+interface gpon-port <GPON_PORT>
+profile address-table <PROFILE_NAME>
+do commit
+do confirm`,
+          description: "",
+        },
+      ],
+      "Address-table: несколько s-vlan (IMS/vIMS)": [
+        {
+          command: `configure terminal
+profile address-table "<PROFILE_NAME>"
+s-vlan <S_VLAN_1> use c-vlan
+s-vlan <S_VLAN_2> use c-vlan
+s-vlan <S_VLAN_3> use c-vlan
+exit
+do commit
+do confirm`,
+          description: "",
+        },
       ],
     },
   },

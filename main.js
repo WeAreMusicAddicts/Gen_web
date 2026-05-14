@@ -1109,6 +1109,39 @@ document.addEventListener('DOMContentLoaded', async function() {
                     description = '';
                 }
 
+                const knownAngleTokens = new Set([
+                    '<PROF_NAME>',
+                    '<PROF_INDEX>',
+                    '<PROF_INDEX_NOISE>',
+                    '<PROF_INDEX_DS>',
+                ]);
+                const genericAngleTokens = Array.from(new Set(command.match(/<([A-Z0-9_]+)>/g) || []))
+                    .filter(token => !knownAngleTokens.has(token));
+                if (genericAngleTokens.length > 0) {
+                    const tokenDefaults = {
+                        '<PROFILE_NAME>': 'addresstable-01',
+                        '<GPON_PORT>': '0/0',
+                        '<S_VLAN_1>': 'XX',
+                        '<S_VLAN_2>': 'YY',
+                        '<S_VLAN_3>': 'ZZ',
+                    };
+                    genericAngleTokens.forEach(token => {
+                        const tokenName = token.slice(1, -1);
+                        const defaultValue = tokenDefaults[token] || tokenName;
+                        const label = tokenName.replaceAll('_', '-');
+                        profileInputHtml += `
+                            <div class="diag-profile-row">
+                                <span class="diag-profile-label">${label}:</span>
+                                <input type="text" class="diag-profile-input" data-token="${token}" value="${defaultValue}" placeholder="${label}" onfocus="selectDiagProfileInput(this)" oninput="updateDiagProfileTokenCommand(this)" title="${label}">
+                            </div>
+                        `;
+                        const tokenPattern = new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+                        finalCommand = finalCommand.replace(tokenPattern, defaultValue);
+                    });
+                    dataOriginal = escapeHtml(originalCommandWithTokens);
+                    dataCommand = escapeHtml(finalCommand);
+                }
+
                 if (profileInputHtml) {
                     profileInputBlock = `<div class="diag-profile-stack">${profileInputHtml}</div>`;
                 }
