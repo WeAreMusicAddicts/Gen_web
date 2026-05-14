@@ -175,7 +175,7 @@ do confirm`,
       "Address-table: назначение профиля на gpon-port": [
         {
           command: `configure terminal
-interface gpon-port <GPON_PORT>
+interface gpon-port {slot}/{ponPort}
 profile address-table <PROFILE_NAME>
 do commit
 do confirm`,
@@ -273,7 +273,7 @@ do confirm`,
       "Address-table: назначение профиля на gpon-port": [
         {
           command: `configure terminal
-interface gpon-port <GPON_PORT>
+interface gpon-port {slot}/{ponPort}
 profile address-table <PROFILE_NAME>
 do commit
 do confirm`,

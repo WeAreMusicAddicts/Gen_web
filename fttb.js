@@ -61,6 +61,7 @@ window.fttbDevices = {
         { command: `show interface {portType} {port}`, description: "Общая информация о порте" },
         { command: `show interface {portType} {port} status`, description: "Up/down, скорость, дуплекс" },
         { command: `show interface {portType} {port} counters`, description: "Счетчики/ошибки на порту" },
+        { command: `clear counters interface {portType} {port}`, description: "Сброс счетчиков на порту" },
         { command: `test cable-diagnostics gigabitethernet {port}`, description: "TDR-тест кабеля" },
       ],
       "Конфигурация": [
@@ -137,6 +138,7 @@ window.fttbDevices = {
         { command: `show interface {portType} {port}`, description: "Информация о порте" },
         { command: `show interface {portType} {port} status`, description: "Статус порта" },
         { command: `show interface {portType} {port} counters`, description: "Счетчики порта" },
+        { command: `clear counters interface {portType} {port}`, description: "Сброс счетчиков на порту" },
         { command: `show cable-diagnostics tdr interface {portType} {port}`, description: "TDR-тест кабеля" },
       ],
       "Конфигурация": [
@@ -193,6 +195,7 @@ window.fttbDevices = {
       "Физика порта": [
         { command: `show interface {portType} {port}`, description: "Информация о порте" },
         { command: `show interface {portType} {port} counters`, description: "Счетчики порта" },
+        { command: `clear counters ethernet {port}`, description: "Сброс счетчиков на порту" },
       ],
       "Конфигурация": [
         { command: `show running-config interface {portType} {port}`, description: "Конфигурация порта" },
@@ -248,6 +251,7 @@ window.fttbDevices = {
       "Физика порта": [
         { command: `show interface ethernet {port}`, description: "Информация о порте" },
         { command: `show interface counters ethernet {port}`, description: "Счетчики порта" },
+        { command: `clear counters ethernet {port}`, description: "Сброс счетчиков на порту" },
       ],
       "Конфигурация": [
         { command: `show running-config`, description: "Текущая конфигурация" },
@@ -373,6 +377,7 @@ window.fttbDevices = {
         { command: `show interfaces status`, description: "Список портов" },
         { command: `show interfaces status ethernet {port}`, description: "Статус порта" },
         { command: `show interfaces counters ethernet {port}`, description: "Ошибки на порту" },
+        { command: `clear counters ethernet {port}`, description: "Сброс счетчиков на порту" },
       ],
       "Работа с конфигом": [
         { command: `show interfaces switchport ethernet {port}`, description: "Конфиг порта" },
@@ -446,6 +451,7 @@ window.fttbDevices = {
         { command: `show interfaces brief`, description: "Краткий статус портов" },
         { command: `show interfaces status ethernet {port}`, description: "Статус порта" },
         { command: `show interfaces counters ethernet {port}`, description: "Ошибки на порту" },
+        { command: `clear counters ethernet {port}`, description: "Сброс счетчиков на порту" },
       ],
       "Работа с VLAN": [
         { command: `show vlan`, description: "Список VLAN" },
@@ -588,6 +594,7 @@ config ports {port} state enable`, description: "Перезапуск порта
         { command: `show interface ethernet status`, description: "Просмотр всех портов" },
         { command: `show switchport interface ethernet {port}`, description: "Просмотр режима порта" },
         { command: `show running-config interface ethernet {port}`, description: "Просмотр конфигурации порта" },
+        { command: `reset counters interface ethernet {port}`, description: "Сброс счетчиков на порту" },
       ],
       "MAC-таблица": [
         { command: `show mac-address-table interface ethernet {port}`, description: "Просмотр MAC-адресов на порту" },
@@ -675,6 +682,7 @@ config ports {port} state enable`, description: "Перезапуск порта
         { command: `display interface brief`, description: "Краткий статус интерфейсов" },
         { command: `display interface description`, description: "Описание интерфейсов" },
         { command: `display interface GigabitEthernet{port}`, description: "Информация по порту" },
+        { command: `reset counters interface GigabitEthernet{port}`, description: "Сброс счетчиков на порту" },
       ],
       "Конфигурация портов": [
         { command: `display current-configuration`, description: "Текущая конфигурация" },
@@ -773,6 +781,7 @@ virtual-cable-test`, description: "Диагностика кабеля" },
         { command: `display interface brief`, description: "Краткий статус интерфейсов" },
         { command: `display interface description`, description: "Описание интерфейсов" },
         { command: `display interface GigabitEthernet{port}`, description: "Информация по порту" },
+        { command: `reset counters interface GigabitEthernet{port}`, description: "Сброс счетчиков на порту" },
       ],
       "Конфигурация портов": [
         { command: `display current-configuration`, description: "Текущая конфигурация" },
