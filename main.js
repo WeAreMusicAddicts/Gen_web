@@ -1121,14 +1121,18 @@ document.addEventListener('DOMContentLoaded', async function() {
                     const tokenDefaults = {
                         '<PROFILE_NAME>': 'addresstable-01',
                         '<GPON_PORT>': '0/0',
+                        '<PROF_INDEX_TEMPLATE>': 'PROF-IN',
                         '<S_VLAN_1>': 'XX',
                         '<S_VLAN_2>': 'YY',
                         '<S_VLAN_3>': 'ZZ',
                     };
+                    const tokenLabels = {
+                        '<PROF_INDEX_TEMPLATE>': 'PROF-IN',
+                    };
                     genericAngleTokens.forEach(token => {
                         const tokenName = token.slice(1, -1);
                         const defaultValue = tokenDefaults[token] || tokenName;
-                        const label = tokenName.replaceAll('_', '-');
+                        const label = tokenLabels[token] || tokenName.replaceAll('_', '-');
                         profileInputHtml += `
                             <div class="diag-profile-row">
                                 <span class="diag-profile-label">${label}:</span>
