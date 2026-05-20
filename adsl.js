@@ -433,6 +433,9 @@ vdsl2 snrmargin-prf <PROF_NAME>`, description: "Смена профиля SNR" }
         const basePort = `${x}/${y}`;
         return [
           `configure`,
+          `interface ${basePort}`,
+          `vlan participation include ${vlan || '*VLAN*'}`,
+          'exit',
           `interface ${basePort}/1`,
           `pvc 8/35`,
           `vlan participation exclude 1`,
@@ -450,6 +453,9 @@ vdsl2 snrmargin-prf <PROF_NAME>`, description: "Смена профиля SNR" }
         const basePort = `${x}/${y}`;
         return [
           `configure`,
+          `interface ${basePort}`,
+          `vlan participation include ${vlan || '*VLAN*'}`,
+          'exit',
           `interface ${basePort}/3`,
           `pvc 0/34`,
           `vlan participation exclude 1`,
