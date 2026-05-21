@@ -1,4 +1,4 @@
-// FTTB (Ethernet): в одном месте и конфиг, и диагностика по каждому устройству.
+﻿// FTTB (Ethernet): в одном месте и конфиг, и диагностика по каждому устройству.
 // Добавление нового устройства: допишите новый ключ в fttbDevices.
 
 window.fttbDevices = {
@@ -69,6 +69,11 @@ window.fttbDevices = {
         { command: `show vlan id {vlan}`, description: "Информация по VLAN" },
         { command: `show vlan brief`, description: "Список VLAN" },
         { command: `configure terminal\ndefault interface {portType} {port}`, description: "Сброс конфигурации порта." },
+      ],
+      "Скорость/Negotiation": [
+        { command: `configure terminal\ninterface gigabitethernet {port}\nspeed <PORT_SPEED>`, description: "Смена скорости на порту" },
+        { command: `configure terminal\ninterface gigabitethernet {port}\nnegotiation`, description: "Включение auto-negotiation" },
+        { command: `configure terminal\ninterface gigabitethernet {port}\nno negotiation`, description: "Отключение auto-negotiation" },
       ],
       "MAC-таблица": [
         { command: `show mac-address-table interface {portType} {port}`, description: "MAC на конкретном порту" },

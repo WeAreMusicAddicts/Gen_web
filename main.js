@@ -1121,12 +1121,14 @@ document.addEventListener('DOMContentLoaded', async function() {
                     const tokenDefaults = {
                         '<PROFILE_NAME>': 'addresstable-01',
                         '<GPON_PORT>': '0/0',
+                        '<PORT_SPEED>': '1000',
                         '<PROF_INDEX_TEMPLATE>': 'PROF-IN',
                         '<S_VLAN_1>': 'XX',
                         '<S_VLAN_2>': 'YY',
                         '<S_VLAN_3>': 'ZZ',
                     };
                     const tokenLabels = {
+                        '<PORT_SPEED>': 'SPEED',
                         '<PROF_INDEX_TEMPLATE>': 'PROF-IN',
                     };
                     genericAngleTokens.forEach(token => {
