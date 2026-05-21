@@ -474,6 +474,12 @@ vdsl2 snrmargin-prf <PROF_NAME>`, description: "Смена профиля SNR" }
         { command: `show running-config {port}`, description: "Просмотр конфигурации порта" },
         { command: `show running-config {port} all`, description: "Полная конфигурация порта" },
       ],
+      "Состояние порта": [
+        { command: `show port {port}`, description: "Просмотр состояния порта" },
+      ],
+      "Детальная DSL-информация": [
+        { command: `show dsl port current values {port}`, description: "Скорость/профиль/трафик/параметры" },
+      ],
       "Проверка PVC": [
         { command: `show running-config {port}/1`, description: "Проверка PVC PPPoE" },
         { command: `show running-config {port}/3`, description: "Проверка PVC IP-TV" },
@@ -482,8 +488,12 @@ vdsl2 snrmargin-prf <PROF_NAME>`, description: "Смена профиля SNR" }
         { command: `show mac-addr-table`, description: "Просмотр MAC-таблицы" },
         { command: `show vlan brief`, description: "Краткий список VLAN" },
       ],
-      "Состояние DSL": [
-        { command: `show dsl port state {port}`, description: "Состояние DSL-порта" },
+      "Работа с профилями": [
+        { command: `show dsl profile all`, description: "Просмотр списка профилей" },
+        { command: `show dsl port profile {port}`, description: "Просмотр установленного профиля на порту" },
+      ],
+      "Смена профиля": [
+        { command: `configure\ninterface {port}\ndsl port profile <PROF_NAME>\nexit\nexit\nsave config`, description: "Смена профиля на порту" },
       ],
     },
   },
