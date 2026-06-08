@@ -569,7 +569,7 @@ config ports {port} state enable`, description: "Перезапуск порта
   },
 
   qtech: {
-    label: "Qtech",
+    label: "Qtech / Orion Alpha A26",
     modes: {
       access: ({ portType, port, accessVlan, desc }) => [
         `interface Ethernet${port}`,
