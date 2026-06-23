@@ -722,6 +722,7 @@ vdsl2 snrmargin-prf <PROF_NAME>`, description: "Смена профиля SNR" }
       ],
       "VLAN": [
         { command: `bridge fpvid`, description: "Просмотр VLAN на всех портах" },
+        { command: `bridge filter`, description: "Просмотр MAC-адресов" },
       ],
     },
   },
