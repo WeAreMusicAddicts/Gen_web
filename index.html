@@ -12,7 +12,9 @@
 <body>
     <div class="container">
         <header class="header">
-            <h1><i class="fas fa-network-wired"></i> Network Port Config Generator</h1>
+            <div class="header-main-row">
+                <h1><i class="fas fa-network-wired"></i> Network Port Config Generator</h1>
+            </div>
             <p class="tagline">Генератор команд для настройки портов на DSL, FTTB и GPON оборудовании</p>
         </header>
 
@@ -591,10 +593,10 @@
     </div>
 
     <!-- Устройства (конфигурация + диагностика в одном месте) -->
+    <script src="template-engine.js"></script>
     <script src="adsl.js"></script>
     <script src="fttb.js"></script>
     <script src="gpon.js"></script>
-    <script src="sib_templates.js"></script>
     
     <!-- Основной файл -->
     <script src="main.js"></script>

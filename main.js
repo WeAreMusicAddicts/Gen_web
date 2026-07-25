@@ -21,6 +21,20 @@ document.addEventListener('DOMContentLoaded', async function() {
         timerId: 0,
     };
 
+    // Список профилей для устройств (обновляется из DB)
+    let alcatel7330Profiles = [
+        'base-05', 'base-1', 'base-2', 'base-4', 'base-6',
+        'base-8', 'base-10', 'base-12', 'base-14', 'base-16',
+        'base-18', 'base-20', 'base-22', 'base-max'
+    ];
+    let zyxel1000Profiles = [
+        'base-05', 'base-1', 'base-2', 'base-4', 'base-6',
+        'base-8', 'base-10', 'base-12', 'base-14', 'base-16',
+        'base-18', 'base-20', 'base-22', 'base-max',
+        'base-auto-9', 'base-auto-12'
+    ];
+    let zyxel1000Modulations = ['glite', 'gdmt', 't1413', 'auto', 'adsl2', 'adsl2+'];
+
     // Проверка загрузки устройств
     function checkDevicesLoaded() {
         const missing = [];
@@ -112,6 +126,116 @@ document.addEventListener('DOMContentLoaded', async function() {
         'huawei_5605',
     ]);
 
+    // Dynamic database loader from backend REST API
+    async function initFromApi() {
+        try {
+            const resp = await fetch('/api/init');
+            if (!resp.ok) return false;
+            const data = await resp.json();
+
+            if (data.devices) {
+                for (const tech of ['adsl', 'fttb', 'gpon']) {
+                    if (!data.devices[tech]) continue;
+                    window.devices[tech] = window.devices[tech] || {};
+                    for (const [devKey, dev] of Object.entries(data.devices[tech])) {
+                        const procServices = {};
+                        const procModes = {};
+
+                        for (const [sKey, tplText] of Object.entries(dev.services || {})) {
+                            procServices[sKey] = function(params) {
+                                if (typeof tplText === 'function') return tplText(params);
+                                const text = window.TemplateEngine ? window.TemplateEngine.renderTemplate(tplText, params) : tplText;
+                                return text.split('\n');
+                            };
+                        }
+
+                        for (const [mKey, tplText] of Object.entries(dev.modes || {})) {
+                            procModes[mKey] = function(params) {
+                                if (typeof tplText === 'function') return tplText(params);
+                                const text = window.TemplateEngine ? window.TemplateEngine.renderTemplate(tplText, params) : tplText;
+                                return text.split('\n');
+                            };
+                        }
+
+                        window.devices[tech][devKey] = {
+                            label: dev.label,
+                            services: procServices,
+                            modes: procModes,
+                            diagnostics: dev.diagnostics || {}
+                        };
+                    }
+                }
+            }
+
+            if (data.defaultPorts) {
+                Object.assign(defaultPorts, data.defaultPorts);
+            }
+
+            if (data.settings) {
+                window.appSettings = data.settings;
+                if (Array.isArray(data.settings.profiles_adsl) && data.settings.profiles_adsl.length) {
+                    alcatel7330Profiles = data.settings.profiles_adsl;
+                    zyxel1000Profiles = data.settings.profiles_adsl;
+                }
+                if (Array.isArray(data.settings.modulations) && data.settings.modulations.length) {
+                    zyxel1000Modulations = data.settings.modulations;
+                }
+            }
+
+            refreshDeviceDropdowns();
+            return true;
+        } catch (e) {
+            console.warn('DB load warning, using static fallback:', e);
+            return false;
+        }
+    }
+
+    function refreshDeviceDropdowns() {
+        const adslSelect = document.getElementById('adsl-device');
+        const fttbSelect = document.getElementById('fttb-device');
+        const gponSelect = document.getElementById('gpon-device');
+
+        if (adslSelect && window.devices.adsl) {
+            const curVal = adslSelect.value;
+            let html = '';
+            for (const [key, dev] of Object.entries(window.devices.adsl)) {
+                html += `<option value="${key}">${dev.label || key}</option>`;
+            }
+            html += `<option value="sib_templates">Сибирь: шаблоны (из файла)</option>`;
+            adslSelect.innerHTML = html;
+            if (curVal && adslSelect.querySelector(`option[value="${curVal}"]`)) {
+                adslSelect.value = curVal;
+            }
+        }
+
+        if (fttbSelect && window.devices.fttb) {
+            const curVal = fttbSelect.value;
+            let html = '';
+            for (const [key, dev] of Object.entries(window.devices.fttb)) {
+                html += `<option value="${key}">${dev.label || key}</option>`;
+            }
+            html += `<option value="sib_templates">Сибирь: каталоги филиалов</option>`;
+            fttbSelect.innerHTML = html;
+            if (curVal && fttbSelect.querySelector(`option[value="${curVal}"]`)) {
+                fttbSelect.value = curVal;
+            }
+        }
+
+        if (gponSelect && window.devices.gpon) {
+            const curVal = gponSelect.value;
+            let html = '';
+            for (const [key, dev] of Object.entries(window.devices.gpon)) {
+                html += `<option value="${key}">${dev.label || key}</option>`;
+            }
+            gponSelect.innerHTML = html;
+            if (curVal && gponSelect.querySelector(`option[value="${curVal}"]`)) {
+                gponSelect.value = curVal;
+            }
+        }
+    }
+
+    await initFromApi();
+
     function normalizeHuaweiAdslPort(port, device) {
         if (!port || !huaweiAdslDevices.has(device)) {
             return port;
@@ -124,24 +248,24 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     function updateAdslSpecialFields(deviceValue = document.getElementById('adsl-device')?.value, serviceValue = document.getElementById('adsl-service')?.value) {
-        const serviceGroup = document.getElementById('adsl-service-group');
         const serviceSelect = document.getElementById('adsl-service');
-        const tplGroup = document.getElementById('adsl-sib-template-group');
-        const extraGroup = document.getElementById('adsl-sib-extra-group');
         const mcastGroup = document.getElementById('adsl-mcast-vlan-group');
-        const isIskratel = deviceValue === 'iskratel';
 
-        if (serviceSelect) {
-            const options = isIskratel
-                ? [
-                    { value: 'pppoe', text: 'PPPoE (Интернет)' },
-                    { value: 'iptv_tf', text: 'IP-TV (ТФ)' },
-                    { value: 'iptv_ef', text: 'IP-TV (ЕФ)' },
-                ]
-                : [
-                    { value: 'pppoe', text: 'PPPoE (Интернет)' },
-                    { value: 'iptv_tf', text: 'IP-TV (Мультисервис)' },
-                ];
+        if (serviceSelect && window.devices?.adsl?.[deviceValue]) {
+            const svcs = window.devices.adsl[deviceValue].services || {};
+            const serviceKeys = Object.keys(svcs);
+            
+            const labels = {
+                pppoe: 'PPPoE (Интернет)',
+                iptv: 'IP-TV (Мультисервис)',
+                iptv_tf: 'IP-TV (ТФ)',
+                iptv_ef: 'IP-TV (ЕФ)',
+            };
+
+            const options = serviceKeys.map(k => ({
+                value: k,
+                text: labels[k] || k.toUpperCase()
+            }));
 
             const currentSignature = Array.from(serviceSelect.options)
                 .map(option => `${option.value}:${option.text}`)
@@ -153,27 +277,13 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (currentSignature !== nextSignature) {
                 const nextValue = options.some(option => option.value === serviceValue)
                     ? serviceValue
-                    : serviceValue === 'iptv_ef'
-                        ? 'iptv_tf'
-                        : 'pppoe';
+                    : (options[0]?.value || 'pppoe');
                 serviceSelect.innerHTML = options
                     .map(option => `<option value="${option.value}">${option.text}</option>`)
                     .join('');
                 serviceSelect.value = nextValue;
-                serviceValue = nextValue;
             }
         }
-
-        if (deviceValue === 'sib_templates') {
-            serviceGroup?.classList.add('hidden');
-            tplGroup?.classList.remove('hidden');
-            mcastGroup?.classList.add('hidden');
-            return;
-        }
-
-        serviceGroup?.classList.remove('hidden');
-        tplGroup?.classList.add('hidden');
-        extraGroup?.classList.add('hidden');
 
         if (huaweiAdslDevices.has(deviceValue)) {
             mcastGroup?.classList.remove('hidden');
@@ -237,8 +347,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
         
         const device = document.getElementById('adsl-device').value;
-        const serviceValue = document.getElementById('adsl-service').value;
-        const service = serviceValue === 'pppoe' ? 'pppoe' : 'iptv';
+        const service = document.getElementById('adsl-service').value;
         const rawPort = document.getElementById('adsl-port').value.trim() || '0/1';
         const port = normalizeHuaweiAdslPort(rawPort, device);
         const vpiVciRaw = document.getElementById('adsl-vpivci').value.trim() || '0/35';
@@ -247,40 +356,12 @@ document.addEventListener('DOMContentLoaded', async function() {
         const mcastVlanInput = document.getElementById('adsl-mcast-vlan');
         const mcastVlanRaw = mcastVlanInput?.value.trim() || '';
         const mcastVlan = mcastVlanRaw || vlan;
-        const iskratelIptvMode = serviceValue === 'iptv_ef' ? 'ef' : 'tf';
-
-        if (device === 'sib_templates') {
-            const tplId = document.getElementById('adsl-sib-template')?.value;
-            const tpl = window.sibAdslTemplates?.find(t => t.id === tplId);
-            if (!tpl) {
-                showNotification('Шаблон Сибирь не выбран', 'error');
-                return;
-            }
-            const parts = port.split('/').filter(Boolean);
-            const slot = parts[0] || '0';
-            const portNum = parts[parts.length - 1] || port;
-            const data = {
-                port,
-                slot,
-                portNum,
-                portShort: portNum,
-                vpi,
-                vci,
-                vlan,
-                label: vlan,
-                mcastVlan: '26',
-            };
-            Object.assign(data, readExtraFields('adsl-sib-extra-fields', extractTemplateTokens(tpl.text || '')));
-            setConfigOutput(applyTemplate(tpl.text, data).trim(), '', { showMulticast: false });
-            updateDiagnostics('adsl', device, port, vlan);
-            return;
-        }
 
         let commands = [];
 
         // Проверяем, существует ли устройство и его сервисы
         if (devices.adsl[device]?.services?.[service]) {
-            commands = commands.concat(devices.adsl[device].services[service]({ port, vlan, vpi, vci, mcastVlan, iptvMode: iskratelIptvMode }));
+            commands = commands.concat(devices.adsl[device].services[service]({ port, vlan, vpi, vci, mcastVlan }));
         } else {
             commands.push(`! Шаблон для ${device} (${service}) не найден.`);
             commands.push(`! Проверьте базу команд или используйте общий шаблон:`);
@@ -751,6 +832,153 @@ document.addEventListener('DOMContentLoaded', async function() {
         }, 16);
     }
 
+    function buildDiagCardHtml(cmdObj, context) {
+        const { command, description } = cmdObj;
+        const { device, replacePlaceholders, alcatel7330Profiles, zyxel1000Profiles, zyxel1000Modulations } = context;
+
+        let finalCommand = replacePlaceholders(command);
+        const originalCommandWithTokens = finalCommand;
+        let profileSelectHtml = '';
+        let modulationSelectHtml = '';
+        let profileInputHtml = '';
+        let profileInputBlock = '';
+        let portSpeedSelectHtml = '';
+        let dataCommand = escapeHtml(finalCommand);
+        let dataOriginal = escapeHtml(originalCommandWithTokens);
+        let descText = description;
+
+        const devicesWithProfile = ['alcatel_7330', 'zyxel_5000', 'zyxel_1000', 'zyxel_aam1008', 'alcatel_7324'];
+
+        if (command.includes('{serviceProfile}') && devicesWithProfile.includes(device)) {
+            const profiles = device === 'zyxel_1000' ? zyxel1000Profiles : alcatel7330Profiles;
+            const defaultProfile = device === 'zyxel_1000' ? 'base-auto-9' : 'base-8';
+            profileSelectHtml = `
+                <select class="diag-profile-select" data-token="{serviceProfile}" onchange="updateAdslProfileCommand(this)">
+                    ${profiles.map(p => `<option value="${p}" ${p === defaultProfile ? 'selected' : ''}>${p}</option>`).join('')}
+                </select>
+            `;
+            if (device === 'zyxel_1000' && command.includes('{modulation}')) {
+                modulationSelectHtml = `
+                    <select class="diag-profile-select diag-modulation-select" data-token="{modulation}" onchange="updateAdslProfileCommand(this)">
+                        ${zyxel1000Modulations.map(m => `<option value="${m}" ${m === 'auto' ? 'selected' : ''}>${m}</option>`).join('')}
+                    </select>
+                `;
+            }
+            descText = '';
+            finalCommand = finalCommand.replace(/{serviceProfile}/g, defaultProfile).replace(/{modulation}/g, 'auto');
+            dataCommand = escapeHtml(finalCommand);
+        } else if (command.includes('{spectrumProfile}') || command.includes('{serviceProfile}')) {
+            const spectrumProfile = command.includes('{spectrumProfile}') ? '_no_AnnexM' : '';
+            const serviceProfile = command.includes('{serviceProfile}') ? 'base-12' : '';
+            if (command.includes('{spectrumProfile}')) {
+                profileInputHtml += `<input type="text" class="diag-profile-input" data-token="{spectrumProfile}" value="${spectrumProfile}" placeholder="PROF-NAME" onfocus="selectDiagProfileInput(this)" oninput="updateDiagProfileTokenCommand(this)">`;
+            }
+            if (command.includes('{serviceProfile}')) {
+                profileInputHtml += `<input type="text" class="diag-profile-input" data-token="{serviceProfile}" value="${serviceProfile}" placeholder="PROF-NAME" onfocus="selectDiagProfileInput(this)" oninput="updateDiagProfileTokenCommand(this)">`;
+            }
+            finalCommand = finalCommand.replace(/{spectrumProfile}/g, spectrumProfile).replace(/{serviceProfile}/g, serviceProfile);
+            dataCommand = escapeHtml(finalCommand);
+        }
+
+        if (command.includes('{portSpeed}')) {
+            portSpeedSelectHtml = `
+                <select class="diag-profile-select diag-port-speed-select" data-token="{portSpeed}" onchange="updateDiagPortSpeedCommand(this)">
+                    <option value="auto" selected>auto</option>
+                    <option value="1000_full">1000_full</option>
+                    <option value="100_full">100_full</option>
+                    <option value="100_half">100_half</option>
+                    <option value="10_full">10_full</option>
+                    <option value="10_half">10_half</option>
+                </select>
+            `;
+            finalCommand = finalCommand.replace(/{portSpeed}/g, 'auto');
+            dataCommand = escapeHtml(finalCommand);
+        }
+
+        if (command.includes('<PROF_NAME>')) {
+            const defaultProfileName = 'PROF-NAME';
+            profileInputHtml += `<input type="text" class="diag-profile-input" data-token="<PROF_NAME>" value="${defaultProfileName}" placeholder="PROF-NAME" onfocus="selectDiagProfileInput(this)" oninput="updateDiagProfileTokenCommand(this)">`;
+            finalCommand = finalCommand.replace(/<PROF_NAME>/g, defaultProfileName);
+            dataCommand = escapeHtml(finalCommand);
+        }
+
+        if (command.includes('<PROF_INDEX>')) {
+            const defaultProfileId = 'PROF-INDEX';
+            profileInputHtml += `<input type="text" class="diag-profile-input" data-token="<PROF_INDEX>" value="${defaultProfileId}" placeholder="PROF-INDEX" onfocus="selectDiagProfileInput(this)" oninput="updateDiagProfileTokenCommand(this)" inputmode="numeric">`;
+            finalCommand = finalCommand.replace(/<PROF_INDEX>/g, defaultProfileId);
+            dataCommand = escapeHtml(finalCommand);
+        }
+
+        if (command.includes('<PROF_INDEX_NOISE>')) {
+            const defaultProfileId = 'PROF-INDEX';
+            profileInputHtml += `
+                <div class="diag-profile-row">
+                    <span class="diag-profile-label">NM-PROF:</span>
+                    <input type="text" class="diag-profile-input" data-token="<PROF_INDEX_NOISE>" value="${defaultProfileId}" placeholder="PROF-INDEX" onfocus="selectDiagProfileInput(this)" oninput="updateDiagProfileTokenCommand(this)" inputmode="numeric">
+                </div>
+            `;
+            finalCommand = finalCommand.replace(/<PROF_INDEX_NOISE>/g, defaultProfileId);
+            dataCommand = escapeHtml(finalCommand);
+            descText = '';
+        }
+
+        if (command.includes('<PROF_INDEX_DS>')) {
+            const defaultProfileId = 'PROF-INDEX';
+            profileInputHtml += `
+                <div class="diag-profile-row">
+                    <span class="diag-profile-label">DS-PROF:</span>
+                    <input type="text" class="diag-profile-input" data-token="<PROF_INDEX_DS>" value="${defaultProfileId}" placeholder="PROF-INDEX" onfocus="selectDiagProfileInput(this)" oninput="updateDiagProfileTokenCommand(this)" inputmode="numeric">
+                </div>
+            `;
+            finalCommand = finalCommand.replace(/<PROF_INDEX_DS>/g, defaultProfileId);
+            dataCommand = escapeHtml(finalCommand);
+            descText = '';
+        }
+
+        const knownAngleTokens = new Set(['<PROF_NAME>', '<PROF_INDEX>', '<PROF_INDEX_NOISE>', '<PROF_INDEX_DS>']);
+        const genericAngleTokens = Array.from(new Set(command.match(/<([A-Z0-9_]+)>/g) || [])).filter(t => !knownAngleTokens.has(t));
+        
+        if (genericAngleTokens.length > 0) {
+            const tokenDefaults = { '<PROFILE_NAME>': 'addresstable-01', '<GPON_PORT>': '0/0', '<PORT_SPEED>': '1000', '<PROF_INDEX_TEMPLATE>': 'PROF-IN', '<S_VLAN_1>': 'XX', '<S_VLAN_2>': 'YY', '<S_VLAN_3>': 'ZZ' };
+            const tokenLabels = { '<PORT_SPEED>': 'SPEED', '<PROF_INDEX_TEMPLATE>': 'PROF-IN' };
+            genericAngleTokens.forEach(token => {
+                const tokenName = token.slice(1, -1);
+                const defaultValue = tokenDefaults[token] || tokenName;
+                const label = tokenLabels[token] || tokenName.replaceAll('_', '-');
+                profileInputHtml += `
+                    <div class="diag-profile-row">
+                        <span class="diag-profile-label">${label}:</span>
+                        <input type="text" class="diag-profile-input" data-token="${token}" value="${defaultValue}" placeholder="${label}" onfocus="selectDiagProfileInput(this)" oninput="updateDiagProfileTokenCommand(this)">
+                    </div>
+                `;
+                const tokenPattern = new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+                finalCommand = finalCommand.replace(tokenPattern, defaultValue);
+            });
+            dataCommand = escapeHtml(finalCommand);
+        }
+
+        if (profileInputHtml) {
+            profileInputBlock = `<div class="diag-profile-stack">${profileInputHtml}</div>`;
+        }
+
+        const safeCommand = escapeHtml(finalCommand);
+        return `
+            <div class="diag-command" data-original-template="${escapeHtml(originalCommandWithTokens)}">
+                <div class="diag-command-row">
+                    <div class="diag-command-text" data-command="${dataCommand}" data-original="${dataOriginal}" onclick="copyCommandFromElement(this)" title="Кликните для копирования">${safeCommand}</div>
+                    ${profileSelectHtml}
+                    ${modulationSelectHtml}
+                    ${profileInputBlock}
+                    ${portSpeedSelectHtml}
+                    <div class="diag-command-desc" title="Пояснение">${escapeHtml(descText)}</div>
+                    <button class="diag-copy-btn" onclick="copyCommandFromElement(this.parentElement.querySelector('.diag-command-text'))" title="Копировать команду">
+                        <i class="far fa-copy"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
     function updateDiagnostics(tech, device = null, portInfo = null, vlan = null) {
         // Получаем диагностику устройства или используем пустой объект
         const deviceDiag = (device && devices[tech]?.[device]?.diagnostics) ? devices[tech][device].diagnostics : null;
@@ -986,188 +1214,14 @@ document.addEventListener('DOMContentLoaded', async function() {
             html += `<div class="diag-group-header"><i class="fas fa-folder"></i> ${groupName}</div>`;
             html += `<div class="diag-group-content">`;
             
-            commands.forEach(({ command, description }) => {
-                let finalCommand = replacePlaceholders(command);
-                const originalCommandWithTokens = finalCommand;
-                let profileSelectHtml = '';
-                let modulationSelectHtml = '';
-                let profileInputHtml = '';
-                let profileInputBlock = '';
-                let portSpeedSelectHtml = '';
-                let dataCommand = escapeHtml(finalCommand);
-                let dataOriginal = escapeHtml(originalCommandWithTokens);
-
-                // Устройства с выбором профиля
-                const devicesWithProfile = ['alcatel_7330', 'zyxel_5000', 'zyxel_1000', 'zyxel_aam1008', 'alcatel_7324'];
-
-                // Добавляем выпадающий список профилей для устройств с {serviceProfile}
-                if (command.includes('{serviceProfile}') && devicesWithProfile.includes(device)) {
-                    const profiles = device === 'zyxel_1000' ? zyxel1000Profiles : alcatel7330Profiles;
-                    const defaultProfile = device === 'zyxel_1000' ? 'base-auto-9' : 'base-8';
-                    profileSelectHtml = `
-                        <select class="diag-profile-select" onchange="updateAdslProfileCommand(this)">
-                            ${profiles.map(p => `<option value="${p}" ${p === defaultProfile ? 'selected' : ''}>${p}</option>`).join('')}
-                        </select>
-                    `;
-                    if (device === 'zyxel_1000' && command.includes('{modulation}')) {
-                        modulationSelectHtml = `
-                            <select class="diag-profile-select diag-modulation-select" onchange="updateAdslProfileCommand(this)">
-                                ${zyxel1000Modulations.map(m => `<option value="${m}" ${m === 'auto' ? 'selected' : ''}>${m}</option>`).join('')}
-                            </select>
-                        `;
-                    }
-                    // Убираем текст подсказки для команд с профилями
-                    description = '';
-                    // Сох
-// раняем оригинальную команду с плейсх
-// олдером в data-original
-                    dataCommand = escapeHtml(command);
-                    // Заменяем плейсх
-// олдер на профиль по умолчанию
-                    finalCommand = finalCommand.replace(/{serviceProfile}/g, defaultProfile);
-                    finalCommand = finalCommand.replace(/{modulation}/g, 'auto');
-                } else if (command.includes('{spectrumProfile}') || command.includes('{serviceProfile}')) {
-                    const spectrumProfile = command.includes('{spectrumProfile}') ? '_no_AnnexM' : '';
-                    const serviceProfile = command.includes('{serviceProfile}') ? 'base-12' : '';
-                    if (command.includes('{spectrumProfile}')) {
-                        profileInputHtml += `
-                            <input type="text" class="diag-profile-input" data-token="{spectrumProfile}" value="${spectrumProfile}" placeholder="PROF-NAME" onfocus="selectDiagProfileInput(this)" oninput="updateDiagProfileTokenCommand(this)" title="PROF-NAME">
-                        `;
-                    }
-                    if (command.includes('{serviceProfile}')) {
-                        profileInputHtml += `
-                            <input type="text" class="diag-profile-input" data-token="{serviceProfile}" value="${serviceProfile}" placeholder="PROF-NAME" onfocus="selectDiagProfileInput(this)" oninput="updateDiagProfileTokenCommand(this)" title="PROF-NAME">
-                        `;
-                    }
-                    dataOriginal = escapeHtml(originalCommandWithTokens);
-                    finalCommand = finalCommand
-                        .replace(/{spectrumProfile}/g, spectrumProfile)
-                        .replace(/{serviceProfile}/g, serviceProfile);
-                }
-
-                if (command.includes('{portSpeed}')) {
-                    portSpeedSelectHtml = `
-                        <select class="diag-profile-select diag-port-speed-select" onchange="updateDiagPortSpeedCommand(this)">
-                            <option value="auto" selected>auto</option>
-                            <option value="1000_full">1000_full</option>
-                            <option value="100_full">100_full</option>
-                            <option value="100_half">100_half</option>
-                            <option value="10_full">10_full</option>
-                            <option value="10_half">10_half</option>
-                        </select>
-                    `;
-                    dataOriginal = escapeHtml(originalCommandWithTokens);
-                    finalCommand = finalCommand.replace(/{portSpeed}/g, 'auto');
-                    dataCommand = escapeHtml(finalCommand);
-                }
-
-                if (command.includes('<PROF_NAME>')) {
-                    const defaultProfileName = 'PROF-NAME';
-                    profileInputHtml += `
-                        <input type="text" class="diag-profile-input" data-token="<PROF_NAME>" value="${defaultProfileName}" placeholder="PROF-NAME" onfocus="selectDiagProfileInput(this)" oninput="updateDiagProfileTokenCommand(this)" title="PROF-NAME">
-                    `;
-                    dataOriginal = escapeHtml(originalCommandWithTokens);
-                    finalCommand = finalCommand.replace(/<PROF_NAME>/g, defaultProfileName);
-                    dataCommand = escapeHtml(finalCommand);
-                }
-
-                if (command.includes('<PROF_INDEX>')) {
-                    const defaultProfileId = 'PROF-INDEX';
-                    profileInputHtml += `
-                        <input type="text" class="diag-profile-input" data-token="<PROF_INDEX>" value="${defaultProfileId}" placeholder="PROF-INDEX" onfocus="selectDiagProfileInput(this)" oninput="updateDiagProfileTokenCommand(this)" title="PROF-INDEX" inputmode="numeric">
-                    `;
-                    dataOriginal = escapeHtml(originalCommandWithTokens);
-                    finalCommand = finalCommand.replace(/<PROF_INDEX>/g, defaultProfileId);
-                    dataCommand = escapeHtml(finalCommand);
-                }
-
-                if (command.includes('<PROF_INDEX_NOISE>')) {
-                    const defaultProfileId = 'PROF-INDEX';
-                    profileInputHtml += `
-                        <div class="diag-profile-row">
-                            <span class="diag-profile-label">NM-PROF:</span>
-                            <input type="text" class="diag-profile-input" data-token="<PROF_INDEX_NOISE>" value="${defaultProfileId}" placeholder="PROF-INDEX" onfocus="selectDiagProfileInput(this)" oninput="updateDiagProfileTokenCommand(this)" title="PROF-INDEX (noise-margin)" inputmode="numeric">
-                        </div>
-                    `;
-                    dataOriginal = escapeHtml(originalCommandWithTokens);
-                    finalCommand = finalCommand.replace(/<PROF_INDEX_NOISE>/g, defaultProfileId);
-                    dataCommand = escapeHtml(finalCommand);
-                    description = '';
-                }
-
-                if (command.includes('<PROF_INDEX_DS>')) {
-                    const defaultProfileId = 'PROF-INDEX';
-                    profileInputHtml += `
-                        <div class="diag-profile-row">
-                            <span class="diag-profile-label">DS-PROF:</span>
-                            <input type="text" class="diag-profile-input" data-token="<PROF_INDEX_DS>" value="${defaultProfileId}" placeholder="PROF-INDEX" onfocus="selectDiagProfileInput(this)" oninput="updateDiagProfileTokenCommand(this)" title="PROF-INDEX (ds-rate)" inputmode="numeric">
-                        </div>
-                    `;
-                    dataOriginal = escapeHtml(originalCommandWithTokens);
-                    finalCommand = finalCommand.replace(/<PROF_INDEX_DS>/g, defaultProfileId);
-                    dataCommand = escapeHtml(finalCommand);
-                    description = '';
-                }
-
-                const knownAngleTokens = new Set([
-                    '<PROF_NAME>',
-                    '<PROF_INDEX>',
-                    '<PROF_INDEX_NOISE>',
-                    '<PROF_INDEX_DS>',
-                ]);
-                const genericAngleTokens = Array.from(new Set(command.match(/<([A-Z0-9_]+)>/g) || []))
-                    .filter(token => !knownAngleTokens.has(token));
-                if (genericAngleTokens.length > 0) {
-                    const tokenDefaults = {
-                        '<PROFILE_NAME>': 'addresstable-01',
-                        '<GPON_PORT>': '0/0',
-                        '<PORT_SPEED>': '1000',
-                        '<PROF_INDEX_TEMPLATE>': 'PROF-IN',
-                        '<S_VLAN_1>': 'XX',
-                        '<S_VLAN_2>': 'YY',
-                        '<S_VLAN_3>': 'ZZ',
-                    };
-                    const tokenLabels = {
-                        '<PORT_SPEED>': 'SPEED',
-                        '<PROF_INDEX_TEMPLATE>': 'PROF-IN',
-                    };
-                    genericAngleTokens.forEach(token => {
-                        const tokenName = token.slice(1, -1);
-                        const defaultValue = tokenDefaults[token] || tokenName;
-                        const label = tokenLabels[token] || tokenName.replaceAll('_', '-');
-                        profileInputHtml += `
-                            <div class="diag-profile-row">
-                                <span class="diag-profile-label">${label}:</span>
-                                <input type="text" class="diag-profile-input" data-token="${token}" value="${defaultValue}" placeholder="${label}" onfocus="selectDiagProfileInput(this)" oninput="updateDiagProfileTokenCommand(this)" title="${label}">
-                            </div>
-                        `;
-                        const tokenPattern = new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
-                        finalCommand = finalCommand.replace(tokenPattern, defaultValue);
-                    });
-                    dataOriginal = escapeHtml(originalCommandWithTokens);
-                    dataCommand = escapeHtml(finalCommand);
-                }
-
-                if (profileInputHtml) {
-                    profileInputBlock = `<div class="diag-profile-stack">${profileInputHtml}</div>`;
-                }
-
-                const safeCommand = escapeHtml(finalCommand);
-                html += `
-                    <div class="diag-command">
-                        <div class="diag-command-row">
-                            <div class="diag-command-text" data-command="${dataCommand}" data-original="${dataOriginal}" onclick="copyCommandFromElement(this)" title="Кликните для копирования">${safeCommand}</div>
-                            ${profileSelectHtml}
-                            ${modulationSelectHtml}
-                            ${profileInputBlock}
-                            ${portSpeedSelectHtml}
-                            <div class="diag-command-desc" title="Пояснение">${escapeHtml(description)}</div>
-                            <button class="diag-copy-btn" onclick="copyCommandFromElement(this.parentElement.querySelector('.diag-command-text'))" title="Копировать команду">
-                                <i class="far fa-copy"></i>
-                            </button>
-                        </div>
-                    </div>
-                `;
+            commands.forEach(cmdObj => {
+                html += buildDiagCardHtml(cmdObj, {
+                    device,
+                    replacePlaceholders,
+                    alcatel7330Profiles,
+                    zyxel1000Profiles,
+                    zyxel1000Modulations
+                });
             });
             
             html += `</div></div>`;
@@ -1537,20 +1591,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     function isCsmConfig(deviceValue) {
         return deviceValue && deviceValue.includes('_csm');
     }
-
-    // Список профилей для Alcatel 7330
-    const alcatel7330Profiles = [
-        'base-05', 'base-1', 'base-2', 'base-4', 'base-6',
-        'base-8', 'base-10', 'base-12', 'base-14', 'base-16',
-        'base-18', 'base-20', 'base-22', 'base-max'
-    ];
-    const zyxel1000Profiles = [
-        'base-05', 'base-1', 'base-2', 'base-4', 'base-6',
-        'base-8', 'base-10', 'base-12', 'base-14', 'base-16',
-        'base-18', 'base-20', 'base-22', 'base-max',
-        'base-auto-9', 'base-auto-12'
-    ];
-    const zyxel1000Modulations = ['glite', 'gdmt', 't1413', 'auto', 'adsl2', 'adsl2+'];
 
     document.getElementById('gpon-device').addEventListener('change', function() {
         const gponBranchSelect = document.getElementById('gpon-branch');
@@ -2835,3 +2875,53 @@ document.addEventListener('DOMContentLoaded', async function() {
         diagOutput.innerHTML = '<div class="diag-empty">Файл конфигурации ADSL не загружен. Проверьте наличие adsl.js</div>';
     }
 });
+
+// Global token input & select real-time handlers for diagnostic commands
+window.selectDiagProfileInput = function(inputEl) {
+    if (inputEl && typeof inputEl.select === 'function') {
+        inputEl.select();
+    }
+};
+
+window.updateDiagProfileTokenCommand = function(inputEl) {
+    const card = inputEl.closest('.diag-command') || inputEl.closest('.diag-command-row');
+    if (!card) return;
+    const textEl = card.querySelector('.diag-command-text');
+    if (!textEl) return;
+
+    let original = card.getAttribute('data-original-template') || textEl.getAttribute('data-original') || textEl.textContent;
+    if (!card.getAttribute('data-original-template')) {
+        card.setAttribute('data-original-template', original);
+    }
+
+    let updatedCommand = original;
+
+    // Replace text inputs
+    const allInputs = card.querySelectorAll('.diag-profile-input');
+    allInputs.forEach(inp => {
+        const token = inp.getAttribute('data-token');
+        const val = inp.value;
+        if (token) {
+            const escapedToken = token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            updatedCommand = updatedCommand.replace(new RegExp(escapedToken, 'g'), val);
+        }
+    });
+
+    // Replace selects
+    const allSelects = card.querySelectorAll('.diag-profile-select');
+    allSelects.forEach(sel => {
+        const token = sel.getAttribute('data-token');
+        const val = sel.value;
+        if (token) {
+            const escapedToken = token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            updatedCommand = updatedCommand.replace(new RegExp(escapedToken, 'g'), val);
+        }
+    });
+
+    textEl.textContent = updatedCommand;
+    textEl.setAttribute('data-command', updatedCommand);
+};
+
+window.updateAdslProfileCommand = function(selectEl) {
+    window.updateDiagProfileTokenCommand(selectEl);
+};

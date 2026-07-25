@@ -337,26 +337,8 @@ vdsl2 snrmargin-prf <PROF_NAME>`, description: "Смена профиля SNR" }
   iskratel: {
     label: "Iskratel MSAN",
     services: {
-      iptv: ({ port, vlan, vpi, vci, iptvMode = 'tf' }) => {
+      iptv_tf: ({ port, vlan, vpi, vci }) => {
         const portNum = port.includes('/') ? port.split('/')[1] : port;
-
-        if (iptvMode === 'ef') {
-          return [
-            `add interface dsl${portNum}:${vpi}_${vci}`,
-            `set interface dsl${portNum}:${vpi}_${vci} enable`,
-            `set vlan pvid interface dsl${portNum}:${vpi}_${vci} vid ${vlan} mode untagged`,
-            `set vlan interface dsl${portNum}:${vpi}_${vci} ingress enable`,
-            `set vlan interface dsl${portNum}:${vpi}_${vci} priority tagged disable`,
-            `set bridge ccx between dsl${portNum}:${vpi}_${vci} fasteth1`,
-            `add vlan member interface dsl${portNum}:${vpi}_${vci} vid ${vlan} ingress enable tag remove`,
-            `set igmp interface dsl${portNum}:${vpi}_${vci} state member limit 1`,
-            `set atm vc tp dsl${portNum}:${vpi}_${vci} qos_profile "ADSL-rtVBR 8M/896k"`,
-            `set bridge qos profile strict_iptv interface dsl${portNum}:${vpi}_${vci}`,
-            `set bridge qos queues egress enable interface dsl${portNum}:${vpi}_${vci}`,
-            `set bridge qos interface dsl${portNum}:${vpi}_${vci} trust cos`,
-          ];
-        }
-
         return [
           `add interface dsl${portNum}:${vpi}_${vci}`,
           `set interface dsl${portNum}:${vpi}_${vci} enable`,
@@ -367,6 +349,23 @@ vdsl2 snrmargin-prf <PROF_NAME>`, description: "Смена профиля SNR" }
           `set igmp interface dsl${portNum}:${vpi}_${vci} state member acl mode deny`,
           `set igmp interface dsl${portNum}:${vpi}_${vci} state member limit 1`,
           `set bridge qos queues egress enable interface dsl${portNum}:${vpi}_${vci}`,
+        ];
+      },
+      iptv_ef: ({ port, vlan, vpi, vci }) => {
+        const portNum = port.includes('/') ? port.split('/')[1] : port;
+        return [
+          `add interface dsl${portNum}:${vpi}_${vci}`,
+          `set interface dsl${portNum}:${vpi}_${vci} enable`,
+          `set vlan pvid interface dsl${portNum}:${vpi}_${vci} vid ${vlan} mode untagged`,
+          `set vlan interface dsl${portNum}:${vpi}_${vci} ingress enable`,
+          `set vlan interface dsl${portNum}:${vpi}_${vci} priority tagged disable`,
+          `set bridge ccx between dsl${portNum}:${vpi}_${vci} fasteth1`,
+          `add vlan member interface dsl${portNum}:${vpi}_${vci} vid ${vlan} ingress enable tag remove`,
+          `set igmp interface dsl${portNum}:${vpi}_${vci} state member limit 1`,
+          `set atm vc tp dsl${portNum}:${vpi}_${vci} qos_profile "ADSL-rtVBR 8M/896k"`,
+          `set bridge qos profile strict_iptv interface dsl${portNum}:${vpi}_${vci}`,
+          `set bridge qos queues egress enable interface dsl${portNum}:${vpi}_${vci}`,
+          `set bridge qos interface dsl${portNum}:${vpi}_${vci} trust cos`,
         ];
       },
       pppoe: ({ port, vlan, vpi, vci }) => {

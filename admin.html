@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Панель управления — Network Port Config Generator</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="stylesheet" href="admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Auth Overlay -->
+    <div id="admin-auth-overlay" class="auth-overlay hidden">
+        <div class="auth-card">
+            <div class="auth-header">
+                <i class="fas fa-lock auth-icon"></i>
+                <h2>Вход в Панель управления</h2>
+                <p>Доступ защищён паролем администратора</p>
+            </div>
+            <form id="auth-form" onsubmit="handleAdminLogin(event)">
+                <div class="form-group" style="text-align: left;">
+                    <label for="auth-password" style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--text-secondary);">Пароль доступа</label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-key"></i>
+                        <input type="password" id="auth-password" class="form-input" placeholder="Введите пароль..." required autofocus>
+                    </div>
+                </div>
+                <div id="auth-error" class="auth-error hidden"></div>
+                <button type="submit" class="btn btn-primary btn-block"><i class="fas fa-sign-in-alt"></i> Войти</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="admin-container">
+        <!-- Header -->
+        <header class="admin-header">
+            <div class="admin-title">
+                <i class="fas fa-sliders-h"></i>
+                <h1>Панель управления оборудованием</h1>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <button class="btn btn-outline btn-sm" onclick="openChangePasswordModal()" title="Сменить пароль"><i class="fas fa-key"></i> Пароль</button>
+                <button class="btn btn-outline btn-sm" onclick="handleAdminLogout()" style="color: var(--accent-red); border-color: rgba(239,68,68,0.3);" title="Выйти из системы"><i class="fas fa-sign-out-alt"></i> Выход</button>
+            </div>
+        </header>
+
+        <!-- Main Navigation Tabs -->
+        <nav class="admin-tabs">
+            <button class="tab-btn active" data-tab="tab-devices"><i class="fas fa-server"></i> Оборудование и команды</button>
+            <button class="tab-btn" data-tab="tab-profiles"><i class="fas fa-list-check"></i> Списки профилей</button>
+            <button class="tab-btn" data-tab="tab-database"><i class="fas fa-database"></i> Бэкап и База данных</button>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="admin-content">
+            
+            <!-- TAB 1: Devices List & Commands -->
+            <section id="tab-devices" class="tab-panel active">
+                <div class="panel-toolbar">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="device-search" placeholder="Поиск оборудования по имени или ключу...">
+                    </div>
+                    <div class="filter-group">
+                        <button class="filter-btn active" data-tech="all">Все</button>
+                        <button class="filter-btn" data-tech="adsl">ADSL</button>
+                        <button class="filter-btn" data-tech="fttb">FTTB</button>
+                        <button class="filter-btn" data-tech="gpon">GPON</button>
+                    </div>
+                    <button class="btn btn-primary" id="btn-add-device"><i class="fas fa-plus"></i> Добавить оборудование</button>
+                </div>
+
+                <div class="data-table-wrapper">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Технология</th>
+                                <th>Название (Label)</th>
+                                <th>Ключ (Key)</th>
+                                <th>Порт по умолч.</th>
+                                <th>Команды и диагностика</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody id="devices-table-body">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+
+
+            <!-- TAB 2: Profiles & Custom Variables -->
+            <section id="tab-profiles" class="tab-panel">
+                <div class="panel-toolbar" style="margin-bottom: 20px;">
+                    <div>
+                        <h3 style="margin-bottom: 6px;"><i class="fas fa-list-check"></i> Списки профилей и динамические переменные</h3>
+                        <p style="color: var(--text-secondary); font-size: 0.88rem; margin: 0;">Создавайте, редактируйте и удаляйте списки значений (Select) или текстовые поля ввода (Input), такие как {serviceProfile}, {modulation}, &lt;PROF_NAME&gt;, &lt;PROF_INDEX&gt;.</p>
+                    </div>
+                    <button class="btn btn-primary" id="btn-create-list"><i class="fas fa-plus"></i> Создать список / переменную</button>
+                </div>
+
+                <div id="profile-lists-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 20px; margin-bottom: 24px;">
+                    <!-- Rendered dynamically -->
+                </div>
+
+                <button type="button" class="btn btn-success" id="btn-save-settings"><i class="fas fa-save"></i> Сохранить все изменения списков</button>
+            </section>
+
+            <!-- TAB 3: Database & Backup -->
+            <section id="tab-database" class="tab-panel">
+                <h3 style="margin-bottom: 20px;"><i class="fas fa-database"></i> Управление базой данных</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                    <div style="background: var(--bg-primary); border: 1px solid var(--border-color); padding: 24px; border-radius: var(--radius-sm);">
+                        <h4><i class="fas fa-download"></i> Резервное копирование</h4>
+                        <p style="color: var(--text-secondary); font-size: 0.88rem; margin: 12px 0 20px;">Скачать полную бэкап-копию всех устройств, сервисов и команд в формате JSON.</p>
+                        <button class="btn btn-primary" id="btn-export-db"><i class="fas fa-file-export"></i> Экспортировать JSON</button>
+                    </div>
+
+                    <div style="background: var(--bg-primary); border: 1px solid var(--border-color); padding: 24px; border-radius: var(--radius-sm);">
+                        <h4><i class="fas fa-upload"></i> Восстановление бэкапа</h4>
+                        <p style="color: var(--text-secondary); font-size: 0.88rem; margin: 12px 0 20px;">Загрузить ранее сохраненную конфигурацию из файла JSON.</p>
+                        <input type="file" id="import-file-input" accept=".json" style="display: none;">
+                        <button class="btn btn-secondary" id="btn-import-db"><i class="fas fa-file-import"></i> Выбрать файл JSON</button>
+                    </div>
+
+                    <div style="background: var(--bg-primary); border: 1px solid var(--accent-red); padding: 24px; border-radius: var(--radius-sm);">
+                        <h4 style="color: var(--accent-red);"><i class="fas fa-undo"></i> Сброс к исходному состоянию</h4>
+                        <p style="color: var(--text-secondary); font-size: 0.88rem; margin: 12px 0 20px;">Сбросить все изменения в базе данных и пересоздать данные из стандартного дистрибутива.</p>
+                        <button class="btn btn-danger" id="btn-reset-db"><i class="fas fa-trash-restore"></i> Выполнить сброс DB</button>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- MODAL: UNIFIED EQUIPMENT MANAGER (Commands + Diagnostics) -->
+    <div id="modal-device-manager" class="modal-overlay">
+        <div class="modal-card modal-card-xl">
+            <div class="modal-header">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span id="mgr-device-badge" class="badge badge-adsl">ADSL</span>
+                    <h3 class="modal-title" id="mgr-device-title">Управление оборудованием</h3>
+                </div>
+                <button class="modal-close" data-close="modal-device-manager">&times;</button>
+            </div>
+
+            <!-- Sub Navigation Inside Manager Modal -->
+            <div class="sub-tabs">
+                <button class="sub-tab-btn active" data-subtab="subtab-services"><i class="fas fa-code"></i> Команды настройки</button>
+                <button class="sub-tab-btn" data-subtab="subtab-diagnostics"><i class="fas fa-stethoscope"></i> Команды диагностики</button>
+            </div>
+
+            <!-- SUBTAB 1: Services & Modes Config -->
+            <div id="subtab-services" class="subtab-panel active">
+                <div class="panel-toolbar" style="margin-top: 16px;">
+                    <h4 style="color: var(--text-secondary);"><i class="fas fa-list-ul"></i> Список услуг / режимов:</h4>
+                    <button class="btn btn-primary btn-sm" id="btn-add-service"><i class="fas fa-plus"></i> Добавить услугу/режим</button>
+                </div>
+
+                <div class="data-table-wrapper" style="margin-bottom: 20px;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Ключ услуги/режима</th>
+                                <th>Название (Label)</th>
+                                <th>Команд в шаблоне</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody id="services-table-body"></tbody>
+                    </table>
+                </div>
+
+                <!-- Service Editor & Live Preview -->
+                <div id="service-editor-container" class="grid-split" style="display: none;">
+                    <div class="editor-box">
+                        <h4 style="margin-bottom: 12px; color: var(--accent-blue);"><i class="fas fa-edit"></i> Редактирование шаблона команд: <span id="editing-service-label"></span></h4>
+                        <div class="form-group">
+                            <label>Вставить переменную/плейсхолдер:</label>
+                            <div class="placeholder-toolbar">
+                                <button class="chip-btn" data-insert="{port}">{port}</button>
+                                <button class="chip-btn" data-insert="{vlan}">{vlan}</button>
+                                <button class="chip-btn" data-insert="{vpi}">{vpi}</button>
+                                <button class="chip-btn" data-insert="{vci}">{vci}</button>
+                                <button class="chip-btn" data-insert="{mcastVlan}">{mcastVlan}</button>
+                                <button class="chip-btn" data-insert="{ontId}">{ontId}</button>
+                                <button class="chip-btn" data-insert="{sn}">{sn}</button>
+                                <button class="chip-btn" data-insert="{ploam}">{ploam}</button>
+                                <button class="chip-btn" data-insert="{desc}">{desc}</button>
+                                <button class="chip-btn" data-insert="{accessVlan}">{accessVlan}</button>
+                                <button class="chip-btn" data-insert="{allowedVlans}">{allowedVlans}</button>
+                                <button class="chip-btn" data-insert="{serviceProfile}">{serviceProfile}</button>
+                                <button class="chip-btn" data-insert="{modulation}">{modulation}</button>
+                                <button class="chip-btn" data-insert="{if vpnEnabled}service 5 custom{/if}">Условие {if}</button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="editor-template-text">Шаблон основных команд:</label>
+                            <textarea id="editor-template-text" class="form-control" rows="8"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="editor-mcast-text">Шаблон команд мультикаста (опционально):</label>
+                            <textarea id="editor-mcast-text" class="form-control" rows="3"></textarea>
+                        </div>
+                        <button class="btn btn-success" id="btn-save-service"><i class="fas fa-save"></i> Сохранить команды</button>
+                    </div>
+
+                    <!-- Live Preview Panel -->
+                    <div class="preview-box">
+                        <div class="preview-header">
+                            <i class="fas fa-eye"></i> Интерактивный просмотр результата
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
+                            <div>
+                                <label style="font-size: 0.75rem; color: var(--text-muted);">Тест: Port</label>
+                                <input type="text" id="test-port" class="form-control" value="0/1">
+                            </div>
+                            <div>
+                                <label style="font-size: 0.75rem; color: var(--text-muted);">Тест: VLAN</label>
+                                <input type="text" id="test-vlan" class="form-control" value="100">
+                            </div>
+                            <div>
+                                <label style="font-size: 0.75rem; color: var(--text-muted);">Тест: VPI</label>
+                                <input type="text" id="test-vpi" class="form-control" value="8">
+                            </div>
+                            <div>
+                                <label style="font-size: 0.75rem; color: var(--text-muted);">Тест: VCI</label>
+                                <input type="text" id="test-vci" class="form-control" value="35">
+                            </div>
+                        </div>
+                        <pre id="service-preview-output" class="preview-code">// Измените шаблон или параметры для проверки</pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SUBTAB 2: Diagnostic Commands -->
+            <div id="subtab-diagnostics" class="subtab-panel">
+                <div class="panel-toolbar" style="margin-top: 16px;">
+                    <h4 style="color: var(--text-secondary);"><i class="fas fa-stethoscope"></i> Команды диагностики оборудования:</h4>
+                    <button class="btn btn-primary btn-sm" id="btn-add-diag"><i class="fas fa-plus"></i> Добавить команду диагностики</button>
+                </div>
+
+                <div class="data-table-wrapper">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Категория</th>
+                                <th>Команда (с {переменными})</th>
+                                <th>Описание</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody id="diagnostics-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-close="modal-device-manager">Закрыть</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Device Add / Edit -->
+    <div id="modal-device" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modal-device-title">Добавить оборудование</h3>
+                <button class="modal-close" data-close="modal-device">&times;</button>
+            </div>
+            <form id="form-device">
+                <input type="hidden" id="dev-id">
+                <div class="form-group">
+                    <label for="dev-tech">Технология:</label>
+                    <select id="dev-tech" class="form-select" required>
+                        <option value="adsl">ADSL / VDSL</option>
+                        <option value="fttb">FTTB (Ethernet)</option>
+                        <option value="gpon">GPON</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="dev-key">Ключ оборудования (буквы, цифры, подчёркивание, например: huawei_5600):</label>
+                    <input type="text" id="dev-key" class="form-control" required placeholder="huawei_5600">
+                </div>
+                <div class="form-group">
+                    <label for="dev-label">Отображаемое название (Label):</label>
+                    <input type="text" id="dev-label" class="form-control" required placeholder="Huawei 5600">
+                </div>
+                <div class="form-group">
+                    <label for="dev-default-port">Порт по умолчанию:</label>
+                    <input type="text" id="dev-default-port" class="form-control" placeholder="0/1">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-close="modal-device">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: Service Add / Edit -->
+    <div id="modal-service" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modal-service-title">Добавить услугу / режим</h3>
+                <button class="modal-close" data-close="modal-service">&times;</button>
+            </div>
+            <form id="form-service">
+                <input type="hidden" id="svc-id">
+                <div class="form-group">
+                    <label for="svc-preset-select"><i class="fas fa-list"></i> Выберите стандартную услугу / режим:</label>
+                    <select id="svc-preset-select" class="form-select">
+                        <option value="pppoe" data-label="PPPoE (Интернет)">PPPoE (Интернет)</option>
+                        <option value="iptv" data-label="IP-TV (Мультисервис)">IP-TV (Мультисервис)</option>
+                        <option value="iptv_tf" data-label="IP-TV (ТФ)">IP-TV (ТФ)</option>
+                        <option value="iptv_ef" data-label="IP-TV (ЕФ)">IP-TV (ЕФ)</option>
+                        <option value="access" data-label="Access Mode">Access Mode (Доступ)</option>
+                        <option value="trunk" data-label="Trunk Mode">Trunk Mode (Транк)</option>
+                        <option value="trunk_native" data-label="Trunk + Native VLAN">Trunk + Native VLAN</option>
+                        <option value="dot1v" data-label="802.1v Protocol VLAN">802.1v Protocol VLAN</option>
+                        <option value="ims" data-label="IMS / ШПД + ТФ + ТВ">IMS / ШПД + ТФ + ТВ</option>
+                        <option value="vims" data-label="VIMS / Видео + ТФ">VIMS / Видео + ТФ</option>
+                        <option value="rf" data-label="RF / КТВ">RF / КТВ</option>
+                        <option value="custom" data-label="">Другое (ввести вручную)...</option>
+                    </select>
+                </div>
+                <div class="form-group" id="svc-key-group">
+                    <label for="svc-key">Ключ услуги/режима (Key):</label>
+                    <input type="text" id="svc-key" class="form-control" required placeholder="pppoe">
+                </div>
+                <div class="form-group" id="svc-label-group">
+                    <label for="svc-label">Название (Label):</label>
+                    <input type="text" id="svc-label" class="form-control" required placeholder="PPPoE (Интернет)">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-close="modal-service">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Продолжить к редактору команд</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: Diagnostic Add / Edit -->
+    <div id="modal-diag" class="modal-overlay">
+        <div class="modal-card modal-card-xl">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modal-diag-title"><i class="fas fa-stethoscope"></i> Диагностическая команда</h3>
+                <button class="modal-close" data-close="modal-diag">&times;</button>
+            </div>
+            <form id="form-diag">
+                <input type="hidden" id="diag-id">
+                <div class="grid-split">
+                    <!-- Left: Form inputs -->
+                    <div>
+                        <div class="form-group">
+                            <label for="diag-category">Категория команды:</label>
+                            <input type="text" id="diag-category" class="form-control" required placeholder="Физика порта" list="diag-category-list">
+                            <datalist id="diag-category-list">
+                                <option value="Состояние порта"></option>
+                                <option value="Физика порта"></option>
+                                <option value="Конфигурация"></option>
+                                <option value="MAC-таблица"></option>
+                                <option value="Работа с VLAN"></option>
+                                <option value="Оптика"></option>
+                                <option value="Работа с профилями"></option>
+                                <option value="Смена профиля"></option>
+                                <option value="Работа с IGMP"></option>
+                                <option value="Алармы/логи"></option>
+                            </datalist>
+                        </div>
+                        <div class="form-group">
+                            <label>Вставить переменную/плейсхолдер в команду:</label>
+                            <div class="placeholder-toolbar">
+                                <button type="button" class="chip-btn" data-insert-diag="{port}">{port}</button>
+                                <button type="button" class="chip-btn" data-insert-diag="{vlan}">{vlan}</button>
+                                <button type="button" class="chip-btn" data-insert-diag="{vpi}">{vpi}</button>
+                                <button type="button" class="chip-btn" data-insert-diag="{vci}">{vci}</button>
+                                <button type="button" class="chip-btn" data-insert-diag="{mac}">{mac}</button>
+                                <button type="button" class="chip-btn" data-insert-diag="{sn}">{sn}</button>
+                                <button type="button" class="chip-btn" data-insert-diag="{ontIdx}">{ontIdx}</button>
+                                <button type="button" class="chip-btn" data-insert-diag="{frameSlot}">{frameSlot}</button>
+                                <button type="button" class="chip-btn" data-insert-diag="{portType}">{portType}</button>
+                                <button type="button" class="chip-btn" data-insert-diag="{serviceProfile}">{serviceProfile}</button>
+                                <button type="button" class="chip-btn" data-insert-diag="{modulation}">{modulation}</button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="diag-command">Текст команды (поддерживает многострочный ввод):</label>
+                            <textarea id="diag-command" class="form-control" rows="4" required placeholder="show interface {portType} {port}"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="diag-description">Описание команды:</label>
+                            <input type="text" id="diag-description" class="form-control" placeholder="Общая информация о состоянии порта">
+                        </div>
+                    </div>
+
+                    <!-- Right: Live Preview -->
+                    <div class="preview-box">
+                        <div class="preview-header">
+                            <i class="fas fa-eye"></i> Интерактивный просмотр диагностики
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
+                            <div>
+                                <label style="font-size: 0.75rem; color: var(--text-muted);">Тест: Port</label>
+                                <input type="text" id="test-diag-port" class="form-control" value="0/1">
+                            </div>
+                            <div>
+                                <label style="font-size: 0.75rem; color: var(--text-muted);">Тест: VLAN</label>
+                                <input type="text" id="test-diag-vlan" class="form-control" value="100">
+                            </div>
+                            <div>
+                                <label style="font-size: 0.75rem; color: var(--text-muted);">Тест: MAC</label>
+                                <input type="text" id="test-diag-mac" class="form-control" value="a1b2.c3d4.e5f6">
+                            </div>
+                            <div>
+                                <label style="font-size: 0.75rem; color: var(--text-muted);">Тест: SN</label>
+                                <input type="text" id="test-diag-sn" class="form-control" value="4857544312345678">
+                            </div>
+                        </div>
+                        <pre id="diag-preview-output" class="preview-code">// Результат подстановки появится здесь</pre>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-close="modal-diag">Отмена</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Сохранить команду</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: List / Variable Add / Edit -->
+    <div id="modal-list" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modal-list-title">Создать список / переменную</h3>
+                <button class="modal-close" data-close="modal-list">&times;</button>
+            </div>
+            <form id="form-list">
+                <input type="hidden" id="list-id">
+                <div class="form-group">
+                    <label for="list-name">Название списка / переменной:</label>
+                    <input type="text" id="list-name" class="form-control" required placeholder="Профили ZTE VDSL">
+                </div>
+                <div class="form-group">
+                    <label for="list-token">Токен / Переменная (например: PROF-NAME, PROF_INDEX, serviceProfile):</label>
+                    <input type="text" id="list-token" class="form-control" required placeholder="PROF-NAME">
+                </div>
+                <div class="form-group">
+                    <label for="list-type">Тип элемента управления:</label>
+                    <select id="list-type" class="form-select" required>
+                        <option value="select">Выпадающий список (Select)</option>
+                        <option value="input">Текстовое поле ввода (Text Input)</option>
+                    </select>
+                </div>
+                <div class="form-group" id="list-default-val-group" style="display: none;">
+                    <label for="list-default-val">Значение по умолчанию / подсказка:</label>
+                    <input type="text" id="list-default-val" class="form-control" placeholder="PROF-NAME">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-close="modal-list">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Change Password -->
+    <div id="modal-change-password" class="modal-overlay">
+        <div class="modal-card" style="max-width: 420px;">
+            <div class="modal-header">
+                <h3 class="modal-title"><i class="fas fa-key"></i> Сменить пароль администратора</h3>
+                <button class="modal-close" data-close="modal-change-password">&times;</button>
+            </div>
+            <form id="form-change-password" onsubmit="submitChangePassword(event)">
+                <div class="modal-body" style="padding-top: 10px;">
+                    <div class="form-group" style="margin-bottom: 14px;">
+                        <label style="display: block; margin-bottom: 6px; font-size: 0.85rem;">Текущий пароль</label>
+                        <input type="password" id="change-pass-current" class="form-control" required placeholder="Введите текущий пароль...">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 14px;">
+                        <label style="display: block; margin-bottom: 6px; font-size: 0.85rem;">Новый пароль</label>
+                        <input type="password" id="change-pass-new" class="form-control" required minlength="3" placeholder="Минимум 3 символа...">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 14px;">
+                        <label style="display: block; margin-bottom: 6px; font-size: 0.85rem;">Подтвердите новый пароль</label>
+                        <input type="password" id="change-pass-confirm" class="form-control" required minlength="3" placeholder="Повторите новый пароль...">
+                    </div>
+                    <div id="change-pass-error" class="auth-error hidden"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-close="modal-change-password">Отмена</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-check"></i> Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="template-engine.js"></script>
+    <script src="admin.js"></script>
+</body>
+</html>
