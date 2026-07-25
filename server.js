@@ -457,7 +457,7 @@ app.post('/api/admin/import', requireAdminAuth, (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
-  console.log(`Admin Panel available at http://localhost:${PORT}/admin`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running on port ${PORT} (bound to 0.0.0.0)`);
+  console.log(`Admin Panel available at /admin`);
 });

@@ -20,6 +20,9 @@
     "url": "https://github.com/WeAreMusicAddicts/Gen_web/issues"
   },
   "homepage": "https://github.com/WeAreMusicAddicts/Gen_web#readme",
+  "engines": {
+    "node": ">=22.5.0"
+  },
   "dependencies": {
     "express": "^5.2.1"
   }
