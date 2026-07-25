@@ -1,7 +1,8 @@
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
-const { DatabaseSync } = require('node:sqlite');
+const { getDatabaseClass } = require('./get-db-class');
+const DatabaseSync = getDatabaseClass();
 
 const dbPath = path.join(__dirname, 'database.sqlite');
 

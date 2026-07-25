@@ -1,7 +1,8 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
-const { DatabaseSync } = require('node:sqlite');
+const { getDatabaseClass } = require('./get-db-class');
+const DatabaseSync = getDatabaseClass();
 const { seedData, initDatabase } = require('./seed-db');
 
 const crypto = require('crypto');
