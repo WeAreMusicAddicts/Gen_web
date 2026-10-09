@@ -27,7 +27,12 @@
         <main class="main-content">
             <!-- Технология ADSL -->
             <section id="adsl-form" class="tech-form active">
-                <h2><i class="fas fa-tachometer-alt"></i> Настройка DSL порта</h2>
+                <div class="tech-form-header">
+                    <h2><i class="fas fa-tachometer-alt"></i> Настройка DSL порта</h2>
+                    <button type="button" class="btn-device-notes" id="btn-notes-adsl" title="Заметки по оборудованию">
+                        <i class="fas fa-sticky-note"></i> <span>Заметки</span>
+                    </button>
+                </div>
                 <div class="form-grid form-grid-single-row">
                     <div class="form-group">
                         <label for="adsl-device"><i class="fas fa-server"></i> Оборудование</label>
@@ -210,7 +215,12 @@
 
             <!-- Технология FTTB -->
             <section id="fttb-form" class="tech-form">
-                <h2><i class="fas fa-ethernet"></i> Настройка Ethernet порта (FTTB)</h2>
+                <div class="tech-form-header">
+                    <h2><i class="fas fa-ethernet"></i> Настройка Ethernet порта (FTTB)</h2>
+                    <button type="button" class="btn-device-notes" id="btn-notes-fttb" title="Заметки по оборудованию">
+                        <i class="fas fa-sticky-note"></i> <span>Заметки</span>
+                    </button>
+                </div>
                 <div class="form-grid">
                     <div class="form-group">
                         <label for="fttb-device"><i class="fas fa-server"></i> Оборудование</label>
@@ -301,7 +311,12 @@
 
             <!-- Технология GPON -->
             <section id="gpon-form" class="tech-form">
-                <h2><i class="fas fa-fiber"></i> Настройка ONT (GPON)</h2>
+                <div class="tech-form-header">
+                    <h2><i class="fas fa-fiber"></i> Настройка ONT (GPON)</h2>
+                    <button type="button" class="btn-device-notes" id="btn-notes-gpon" title="Заметки по оборудованию">
+                        <i class="fas fa-sticky-note"></i> <span>Заметки</span>
+                    </button>
+                </div>
                 <div class="form-grid">
                     <div class="form-group">
                         <label for="gpon-device"><i class="fas fa-server"></i> Оборудование</label>
@@ -592,8 +607,31 @@
         </footer>
     </div>
 
+    <!-- MODAL: Equipment Notes & Cheatsheet -->
+    <div id="modal-device-notes" class="modal-overlay">
+        <div class="modal-card modal-card-notes">
+            <div class="modal-header">
+                <div class="modal-header-left">
+                    <span id="notes-device-tech-badge" class="badge badge-adsl">ADSL</span>
+                    <h3 class="modal-title" id="notes-device-title">Заметки по оборудованию</h3>
+                </div>
+                <button type="button" class="modal-close" id="btn-close-notes-modal">&times;</button>
+            </div>
+            <div class="modal-body modal-notes-body">
+                <div id="notes-content-rendered" class="device-notes-rendered">
+                    <!-- Markdown rendered content will appear here -->
+                </div>
+            </div>
+            <div class="modal-footer modal-notes-footer">
+                <span class="notes-footer-hint"><i class="fas fa-info-circle"></i> Заметку можно дополнить в <a href="/admin" target="_blank" style="color: var(--accent-blue); text-decoration: underline;">Панели управления</a></span>
+                <button type="button" class="btn btn-secondary" id="btn-close-notes-bottom">Закрыть</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Устройства (конфигурация + диагностика в одном месте) -->
     <script src="template-engine.js"></script>
+    <script src="markdown-renderer.js"></script>
     <script src="adsl.js"></script>
     <script src="fttb.js"></script>
     <script src="gpon.js"></script>

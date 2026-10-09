@@ -250,10 +250,13 @@ document.addEventListener('DOMContentLoaded', function () {
             return matchTech && matchSearch;
         });
 
-        tbody.innerHTML = filtered.map(dev => `
+        tbody.innerHTML = filtered.map(dev => {
+            const hasNotes = dev.notes && dev.notes.trim().length > 0;
+            const noteBadge = hasNotes ? `<span class="badge-has-notes" title="Есть заметка"><i class="fas fa-sticky-note"></i> Заметка</span>` : '';
+            return `
             <tr>
                 <td><span class="badge badge-${dev.tech}">${dev.tech.toUpperCase()}</span></td>
-                <td><strong>${dev.label}</strong></td>
+                <td><strong>${dev.label}</strong> ${noteBadge}</td>
                 <td><code>${dev.key}</code></td>
                 <td>${dev.default_port || '0/1'}</td>
                 <td>
@@ -266,7 +269,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     <button class="btn btn-sm btn-danger btn-del-dev" data-id="${dev.id}"><i class="fas fa-trash"></i> Delete</button>
                 </td>
             </tr>
-        `).join('');
+        `;}).join('');
 
         // Bind Edit / Delete / Manage
         tbody.querySelectorAll('.btn-edit-dev').forEach(btn => {
@@ -279,6 +282,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     document.getElementById('dev-key').value = dev.key;
                     document.getElementById('dev-label').value = dev.label;
                     document.getElementById('dev-default-port').value = dev.default_port || '0/1';
+                    if (document.getElementById('dev-notes')) {
+                        document.getElementById('dev-notes').value = dev.notes || '';
+                    }
                     openModal('modal-device');
                 }
             });
@@ -333,6 +339,13 @@ document.addEventListener('DOMContentLoaded', function () {
             currentServices = data.services || [];
             currentDiagnostics = data.diagnostics || [];
 
+            // Populate and preview notes
+            const notesTextarea = document.getElementById('device-notes-textarea');
+            if (notesTextarea) {
+                notesTextarea.value = dev.notes || '';
+                updateNotesPreview(dev.notes || '');
+            }
+
             renderServicesTable();
             renderDiagnosticsTable();
             openModal('modal-device-manager');
@@ -368,7 +381,8 @@ document.addEventListener('DOMContentLoaded', function () {
             tech: document.getElementById('dev-tech').value,
             key: document.getElementById('dev-key').value.trim(),
             label: document.getElementById('dev-label').value.trim(),
-            default_port: document.getElementById('dev-default-port').value.trim() || '0/1'
+            default_port: document.getElementById('dev-default-port').value.trim() || '0/1',
+            notes: document.getElementById('dev-notes') ? document.getElementById('dev-notes').value.trim() : ''
         };
 
         try {
@@ -389,6 +403,105 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         } catch (e) {
             showToast('Ошибка сервера', 'error');
+        }
+    });
+
+    // -------------------------------------------------------------
+    // NOTES & MARKDOWN TOOLBAR & PREVIEW
+    // -------------------------------------------------------------
+    function updateNotesPreview(markdownText) {
+        const preview = document.getElementById('device-notes-preview');
+        if (!preview) return;
+        if (!markdownText || !markdownText.trim()) {
+            preview.innerHTML = '<em style="color: var(--text-muted);">Введите текст слева для предпросмотра</em>';
+            return;
+        }
+        if (window.MarkdownRenderer) {
+            preview.innerHTML = window.MarkdownRenderer.render(markdownText);
+            window.MarkdownRenderer.bindCopyButtons(preview);
+        } else {
+            preview.textContent = markdownText;
+        }
+    }
+
+    const notesTextarea = document.getElementById('device-notes-textarea');
+    if (notesTextarea) {
+        notesTextarea.addEventListener('input', () => {
+            updateNotesPreview(notesTextarea.value);
+        });
+    }
+
+    function insertMarkdownSnippet(before, after = '', defaultText = '') {
+        const textarea = document.getElementById('device-notes-textarea');
+        if (!textarea) return;
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const text = textarea.value;
+        const selected = text.substring(start, end) || defaultText;
+        const replacement = before + selected + after;
+        textarea.value = text.substring(0, start) + replacement + text.substring(end);
+        textarea.focus();
+        textarea.selectionStart = start + before.length;
+        textarea.selectionEnd = start + before.length + selected.length;
+        updateNotesPreview(textarea.value);
+    }
+
+    document.querySelectorAll('.md-tool-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const action = btn.getAttribute('data-md');
+            switch (action) {
+                case 'bold':
+                    insertMarkdownSnippet('**', '**', 'жирный текст');
+                    break;
+                case 'italic':
+                    insertMarkdownSnippet('*', '*', 'курсивный текст');
+                    break;
+                case 'heading':
+                    insertMarkdownSnippet('### ', '\n', 'Заголовок секции');
+                    break;
+                case 'inline-code':
+                    insertMarkdownSnippet('`', '`', 'команда');
+                    break;
+                case 'code-block':
+                    insertMarkdownSnippet('```\n', '\n```\n', 'display version\ndisplay current-configuration');
+                    break;
+                case 'list':
+                    insertMarkdownSnippet('- ', '\n', 'пункт списка');
+                    break;
+                case 'alert-warn':
+                    insertMarkdownSnippet('> ⚠️ **Внимание**: ', '\n', 'Не сохранять без проверки!');
+                    break;
+                case 'alert-info':
+                    insertMarkdownSnippet('> 💡 **Совет**: ', '\n', 'Дефолтный логин root / admin');
+                    break;
+                case 'table':
+                    insertMarkdownSnippet('| Параметр | Значение |\n|---|---|\n| IP | 192.168.1.1 |\n| Порт | 8080 |\n\n');
+                    break;
+            }
+        });
+    });
+
+    document.getElementById('btn-save-notes')?.addEventListener('click', async () => {
+        if (!currentSelectedDevice) return;
+        const notes = document.getElementById('device-notes-textarea')?.value || '';
+        try {
+            const res = await authenticatedFetch(`/api/admin/devices/${currentSelectedDevice.id}/notes`, {
+                method: 'PUT',
+                body: { notes }
+            });
+            if (res.ok) {
+                currentSelectedDevice.notes = notes;
+                const found = allDevices.find(d => d.id === currentSelectedDevice.id);
+                if (found) found.notes = notes;
+                renderDevicesTable();
+                showToast('Заметка успешно сохранена!', 'success');
+            } else {
+                const data = await res.json();
+                showToast(data.error || 'Ошибка при сохранении заметки', 'error');
+            }
+        } catch (err) {
+            showToast('Ошибка сети при сохранении заметки', 'error');
         }
     });
 

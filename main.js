@@ -159,6 +159,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
                         window.devices[tech][devKey] = {
                             label: dev.label,
+                            notes: dev.notes || '',
                             services: procServices,
                             modes: procModes,
                             diagnostics: dev.diagnostics || {}
@@ -232,7 +233,118 @@ document.addEventListener('DOMContentLoaded', async function() {
                 gponSelect.value = curVal;
             }
         }
+
+        updateNotesButton('adsl');
+        updateNotesButton('fttb');
+        updateNotesButton('gpon');
     }
+
+    // -------------------------------------------------------------
+    // EQUIPMENT NOTES MODAL & BUTTONS
+    // -------------------------------------------------------------
+    const notesModal = document.getElementById('modal-device-notes');
+    const notesModalCloseBtn = document.getElementById('btn-close-notes-modal');
+    const notesModalCloseBottom = document.getElementById('btn-close-notes-bottom');
+    const notesContentRendered = document.getElementById('notes-content-rendered');
+    const notesTitle = document.getElementById('notes-device-title');
+    const notesBadge = document.getElementById('notes-device-tech-badge');
+
+    function closeNotesModal() {
+        if (notesModal) notesModal.classList.remove('open');
+    }
+
+    if (notesModalCloseBtn) notesModalCloseBtn.addEventListener('click', closeNotesModal);
+    if (notesModalCloseBottom) notesModalCloseBottom.addEventListener('click', closeNotesModal);
+    if (notesModal) {
+        notesModal.addEventListener('click', (e) => {
+            if (e.target === notesModal) closeNotesModal();
+        });
+    }
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && notesModal && notesModal.classList.contains('open')) {
+            closeNotesModal();
+        }
+    });
+
+    function getDeviceNoteData(tech, deviceKey) {
+        const dev = window.devices?.[tech]?.[deviceKey];
+        if (!dev) return null;
+        return {
+            key: deviceKey,
+            label: dev.label || deviceKey,
+            tech: tech,
+            notes: (dev.notes || '').trim()
+        };
+    }
+
+    function updateNotesButton(tech) {
+        const selectId = `${tech}-device`;
+        const btnId = `btn-notes-${tech}`;
+        const select = document.getElementById(selectId);
+        const btn = document.getElementById(btnId);
+        if (!select || !btn) return;
+
+        const devKey = select.value;
+        const devData = getDeviceNoteData(tech, devKey);
+        const hasNotes = devData && devData.notes.length > 0;
+
+        if (hasNotes) {
+            btn.classList.add('has-notes');
+            btn.classList.remove('no-notes');
+            btn.innerHTML = '<i class="fas fa-sticky-note"></i> <span>Заметки</span>';
+            btn.title = `Открыть заметки по оборудованию ${devData.label}`;
+        } else {
+            btn.classList.remove('has-notes');
+            btn.classList.add('no-notes');
+            btn.innerHTML = '<i class="far fa-sticky-note"></i> <span>Заметки</span>';
+            btn.title = `Заметки для этого оборудования пока не заполнены (нажмите для просмотра)`;
+        }
+    }
+
+    function openNotesModal(tech) {
+        const selectId = `${tech}-device`;
+        const select = document.getElementById(selectId);
+        if (!select || !notesModal) return;
+
+        const devKey = select.value;
+        const devData = getDeviceNoteData(tech, devKey);
+        const label = devData ? devData.label : devKey;
+        const notes = devData ? devData.notes : '';
+
+        if (notesTitle) notesTitle.textContent = `Заметки: ${label}`;
+        if (notesBadge) {
+            notesBadge.className = `badge badge-${tech}`;
+            notesBadge.textContent = tech.toUpperCase();
+        }
+
+        if (notesContentRendered) {
+            if (notes && notes.length > 0) {
+                if (window.MarkdownRenderer) {
+                    notesContentRendered.innerHTML = window.MarkdownRenderer.render(notes);
+                    window.MarkdownRenderer.bindCopyButtons(notesContentRendered);
+                } else {
+                    notesContentRendered.textContent = notes;
+                }
+            } else {
+                notesContentRendered.innerHTML = `
+                    <div style="text-align: center; padding: 30px 10px; color: var(--text-muted);">
+                        <i class="far fa-sticky-note" style="font-size: 2.5rem; margin-bottom: 12px; display: block; opacity: 0.5;"></i>
+                        <p style="font-size: 1rem; margin-bottom: 6px; color: var(--text-primary);">Заметки для <strong>${label}</strong> пока не добавлены.</p>
+                        <p style="font-size: 0.85rem;">Вы можете добавить особенности настройки, пароли и важные команды в <a href="/admin" target="_blank" style="color: var(--accent-primary); text-decoration: underline;">Панели управления</a> во вкладке «Заметки по оборудованию».</p>
+                    </div>
+                `;
+            }
+        }
+
+        notesModal.classList.add('open');
+    }
+
+    ['adsl', 'fttb', 'gpon'].forEach(tech => {
+        const btn = document.getElementById(`btn-notes-${tech}`);
+        if (btn) {
+            btn.addEventListener('click', () => openNotesModal(tech));
+        }
+    });
 
     await initFromApi();
 
@@ -1266,6 +1378,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         const port = normalizeHuaweiAdslPort(portInput.value, this.value);
         const vlan = document.getElementById('adsl-vlan').value || '101';
         scheduleDiagnosticsUpdate('adsl', this.value, port, vlan);
+        updateNotesButton('adsl');
     });
 
     document.getElementById('adsl-service')?.addEventListener('change', function() {
@@ -1273,6 +1386,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     });
 
     document.getElementById('fttb-device').addEventListener('change', function() {
+        updateNotesButton('fttb');
         // Автозаполнение порта
         const portInput = document.getElementById('fttb-port');
         const portTypeGroup = document.getElementById('fttb-port-type-group');
@@ -1610,6 +1724,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         updateGponFields();
         scheduleDiagnosticsUpdate('gpon', effectiveDevice, ontInput.value);
+        updateNotesButton('gpon');
     });
 
     const gponLteModelSelect = document.getElementById('gpon-lte-model');

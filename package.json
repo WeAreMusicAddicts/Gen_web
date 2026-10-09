@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "seed": "node seed-db.js",
+    "reset-password": "node reset-password.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -24,8 +25,6 @@
     "node": ">=22.5.0"
   },
   "dependencies": {
-    "better-sqlite3": "^11.7.0",
-    "express": "^5.2.1",
-    "sqlite3": "^6.0.1"
+    "express": "^5.2.1"
   }
 }

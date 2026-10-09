@@ -152,6 +152,7 @@
             <div class="sub-tabs">
                 <button class="sub-tab-btn active" data-subtab="subtab-services"><i class="fas fa-code"></i> Команды настройки</button>
                 <button class="sub-tab-btn" data-subtab="subtab-diagnostics"><i class="fas fa-stethoscope"></i> Команды диагностики</button>
+                <button class="sub-tab-btn" data-subtab="subtab-notes"><i class="fas fa-sticky-note"></i> Заметки по оборудованию</button>
             </div>
 
             <!-- SUBTAB 1: Services & Modes Config -->
@@ -259,6 +260,58 @@
                 </div>
             </div>
 
+            <!-- SUBTAB 3: Notes & Cheatsheet (Markdown + Code) -->
+            <div id="subtab-notes" class="subtab-panel">
+                <div class="panel-toolbar" style="margin-top: 16px; margin-bottom: 12px;">
+                    <div>
+                        <h4 style="color: var(--text-secondary); margin-bottom: 4px;"><i class="fas fa-sticky-note"></i> Заметки по оборудованию</h4>
+                        <p style="color: var(--text-muted); font-size: 0.82rem; margin: 0;">Поддерживается разметка Markdown, блоки кода, списки, предупреждения и подсказки. Отображается в модальном окне на главной странице.</p>
+                    </div>
+                    <button class="btn btn-success" id="btn-save-notes"><i class="fas fa-save"></i> Сохранить заметку</button>
+                </div>
+
+                <div class="notes-editor-layout">
+                    <!-- Left: Editor & Toolbar -->
+                    <div class="notes-editor-col">
+                        <div class="markdown-toolbar">
+                            <button type="button" class="md-tool-btn" data-md="bold" title="Жирный текст (**текст**)"><i class="fas fa-bold"></i></button>
+                            <button type="button" class="md-tool-btn" data-md="italic" title="Курсив (*текст*)"><i class="fas fa-italic"></i></button>
+                            <button type="button" class="md-tool-btn" data-md="heading" title="Заголовок (### Заголовок)"><i class="fas fa-heading"></i></button>
+                            <span class="md-tool-sep"></span>
+                            <button type="button" class="md-tool-btn" data-md="inline-code" title="Строчный код (`код`)"><i class="fas fa-terminal"></i> `код`</button>
+                            <button type="button" class="md-tool-btn" data-md="code-block" title="Блок кода (```команды```)"><i class="fas fa-code"></i> Блок кода</button>
+                            <span class="md-tool-sep"></span>
+                            <button type="button" class="md-tool-btn" data-md="list" title="Список (- пункт)"><i class="fas fa-list-ul"></i></button>
+                            <button type="button" class="md-tool-btn" data-md="alert-warn" title="Предупреждение (> ⚠️ Внимание)"><i class="fas fa-exclamation-triangle"></i> Внимание</button>
+                            <button type="button" class="md-tool-btn" data-md="alert-info" title="Подсказка (> 💡 Совет)"><i class="fas fa-lightbulb"></i> Совет</button>
+                            <button type="button" class="md-tool-btn" data-md="table" title="Таблица"><i class="fas fa-table"></i></button>
+                        </div>
+                        <textarea id="device-notes-textarea" class="form-control notes-textarea" rows="14" placeholder="Введите заметки, дефолтные логины/пароли, нюансы настройки или важные команды...
+Пример:
+### Дефолтные данные
+- IP: `192.168.1.1`
+- Логин / Пароль: `admin` / `admin`
+
+> ⚠️ **Внимание**: Сохранять конфигурацию только через `write all`!
+
+```
+display version
+display board 0
+```"></textarea>
+                    </div>
+
+                    <!-- Right: Live Preview -->
+                    <div class="notes-preview-col">
+                        <div class="preview-header">
+                            <i class="fas fa-eye"></i> Интерактивный предпросмотр (как на главной)
+                        </div>
+                        <div id="device-notes-preview" class="device-notes-rendered preview-scroll">
+                            <em style="color: var(--text-muted);">Введите текст слева для предпросмотра</em>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-close="modal-device-manager">Закрыть</button>
             </div>
@@ -293,6 +346,10 @@
                 <div class="form-group">
                     <label for="dev-default-port">Порт по умолчанию:</label>
                     <input type="text" id="dev-default-port" class="form-control" placeholder="0/1">
+                </div>
+                <div class="form-group">
+                    <label for="dev-notes">Заметки (Markdown):</label>
+                    <textarea id="dev-notes" class="form-control" rows="3" placeholder="Краткая заметка или особенности"></textarea>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-close="modal-device">Отмена</button>
@@ -504,6 +561,7 @@
     <div id="toast-container" class="toast-container"></div>
 
     <script src="template-engine.js"></script>
+    <script src="markdown-renderer.js"></script>
     <script src="admin.js"></script>
 </body>
 </html>

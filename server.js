@@ -17,6 +17,9 @@ if (!fs.existsSync(dbPath)) {
 
 const db = new DatabaseSync(dbPath);
 initDatabase(db);
+try {
+  db.exec("ALTER TABLE devices ADD COLUMN notes TEXT DEFAULT ''");
+} catch(e) {}
 
 const activeTokens = new Set();
 
@@ -95,6 +98,7 @@ function getDevicesForClient() {
       label: dev.label,
       tech: dev.tech,
       defaultPort: dev.default_port,
+      notes: dev.notes || '',
       services: tech === 'fttb' ? {} : devSvc,
       modes: tech === 'fttb' ? devSvc : {},
       diagnostics: devDiags
@@ -210,17 +214,17 @@ app.get('/api/admin/devices/:id/full', (req, res) => {
 
 // POST /api/admin/devices - Create device
 app.post('/api/admin/devices', requireAdminAuth, (req, res) => {
-  const { tech, key, label, default_port, sort_order } = req.body;
+  const { tech, key, label, default_port, notes, sort_order } = req.body;
   if (!tech || !key || !label) {
     return res.status(400).json({ error: 'tech, key, and label are required' });
   }
 
   try {
     const stmt = db.prepare(`
-      INSERT INTO devices (tech, key, label, default_port, sort_order)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO devices (tech, key, label, default_port, notes, sort_order)
+      VALUES (?, ?, ?, ?, ?, ?)
     `);
-    const result = stmt.run(tech, key, label, default_port || '0/1', sort_order || 999);
+    const result = stmt.run(tech, key, label, default_port || '0/1', notes || '', sort_order || 999);
     const newId = Number(result.lastInsertRowid);
     res.json({ success: true, id: newId });
   } catch (err) {
@@ -230,7 +234,7 @@ app.post('/api/admin/devices', requireAdminAuth, (req, res) => {
 
 // PUT /api/admin/devices/:id - Update device
 app.put('/api/admin/devices/:id', requireAdminAuth, (req, res) => {
-  const { tech, key, label, default_port, sort_order } = req.body;
+  const { tech, key, label, default_port, notes, sort_order } = req.body;
   const id = req.params.id;
 
   try {
@@ -240,9 +244,9 @@ app.put('/api/admin/devices/:id', requireAdminAuth, (req, res) => {
     // Update devices table
     db.prepare(`
       UPDATE devices
-      SET tech = ?, key = ?, label = ?, default_port = ?, sort_order = ?
+      SET tech = ?, key = ?, label = ?, default_port = ?, notes = ?, sort_order = ?
       WHERE id = ?
-    `).run(tech, key, label, default_port || '0/1', sort_order || 0, id);
+    `).run(tech, key, label, default_port || '0/1', notes !== undefined ? notes : (oldDev.notes || ''), sort_order || 0, id);
 
     // If key or tech changed, update services & diagnostics references
     if (oldDev.key !== key || oldDev.tech !== tech) {
@@ -253,6 +257,20 @@ app.put('/api/admin/devices/:id', requireAdminAuth, (req, res) => {
     }
 
     res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PUT /api/admin/devices/:id/notes - Update only device notes
+app.put('/api/admin/devices/:id/notes', requireAdminAuth, (req, res) => {
+  const id = req.params.id;
+  const { notes } = req.body || {};
+  try {
+    const dev = db.prepare('SELECT id FROM devices WHERE id = ?').get(id);
+    if (!dev) return res.status(404).json({ error: 'Device not found' });
+    db.prepare('UPDATE devices SET notes = ? WHERE id = ?').run(typeof notes === 'string' ? notes : '', id);
+    res.json({ success: true, message: 'Заметка успешно сохранена' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -440,8 +458,8 @@ app.post('/api/admin/import', requireAdminAuth, (req, res) => {
     db.exec('DELETE FROM devices; DELETE FROM services; DELETE FROM diagnostics; DELETE FROM app_settings;');
 
     if (Array.isArray(data.devices)) {
-      const stmt = db.prepare('INSERT INTO devices (id, tech, key, label, default_port, sort_order) VALUES (?, ?, ?, ?, ?, ?)');
-      data.devices.forEach(d => stmt.run(d.id, d.tech, d.key, d.label, d.default_port, d.sort_order));
+      const stmt = db.prepare('INSERT INTO devices (id, tech, key, label, default_port, notes, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?)');
+      data.devices.forEach(d => stmt.run(d.id, d.tech, d.key, d.label, d.default_port, d.notes || '', d.sort_order));
     }
     if (Array.isArray(data.services)) {
       const stmt = db.prepare('INSERT INTO services (id, tech, device_key, service_key, label, commands_template, multicast_template, required_fields, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');

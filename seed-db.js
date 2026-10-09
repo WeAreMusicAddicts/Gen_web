@@ -14,6 +14,7 @@ function initDatabase(db) {
       key TEXT NOT NULL,
       label TEXT NOT NULL,
       default_port TEXT DEFAULT '0/1',
+      notes TEXT DEFAULT '',
       sort_order INTEGER DEFAULT 0,
       UNIQUE(tech, key)
     );
@@ -46,6 +47,10 @@ function initDatabase(db) {
       value TEXT NOT NULL
     );
   `);
+
+  try {
+    db.exec("ALTER TABLE devices ADD COLUMN notes TEXT DEFAULT ''");
+  } catch(e) {}
 }
 
 function seedData() {
